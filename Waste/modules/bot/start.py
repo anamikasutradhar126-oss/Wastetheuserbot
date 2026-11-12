@@ -39,7 +39,7 @@ class Data:
         [InlineKeyboardButton("🌿 ʙᴏᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ 🌿", url=f"https://t.me/{OWNER_USERNAME}")],
     ]
     START = """**┌────── ˹ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ˼ ⏤͟͟͞͞‌‌‌‌★**
-**┆◍ ʜᴇʏ, ɪ ᴀᴍ : [ᴡᴀsᴛᴇ ꭙ 𝐔sᴇʀвσᴛ](https://t.me/Wasteuserbot)**
+**┆◍ ʜᴇʏ, ɪ ᴀᴍ : [ᴡᴀsᴛᴇ ꭙ 𝐔sᴇʀвσᴛ](https://t.me/Wasteuserrbot)**
 **┆● ɴɪᴄᴇ ᴛᴏ ᴍᴇᴇᴛ ʏᴏᴜ !**
 **└────────────────────────•**
 **❖ ɪ ᴀᴍ ᴀ ᴘᴏᴡᴇʀғᴜʟ ɪᴅ-ᴜsᴇʀ-ʙᴏᴛ**
