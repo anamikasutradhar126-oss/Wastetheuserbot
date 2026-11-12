@@ -1,6 +1,6 @@
-<p align="center">⚡️𝗜𝗦𝗛𝗔-𝗨𝗦𝗘𝗥𝗕𝗢𝗧⚡️</p>
+<p align="center">⚡️𝐖ᴀsᴛᴇ ✘ 𝐔sᴇʀʙᴏᴛ⚡️</p>
 
-<img src="https://files.catbox.moe/qbtaqa.jpg">
+<img src="https://kommodo.ai/i/qTPM4Zh9UjAUfCYUOwGA">
 
 <p align="center">⚡️𝗔 𝗣𝗢𝗪𝗘𝗥𝗙𝗨𝗟 𝗜𝗗 𝗨𝗦𝗘𝗥𝗕𝗢𝗧⚡️</p>
 
@@ -60,8 +60,8 @@ and you ended up in a Finale Battle with Telegram and at the end
 ```
 
 ## Credits 💖
-- [𝗜𝗦𝗛𝗔](https://t.me/ISHA_BOTS)
-- [𝗧𝗢𝗫𝗜𝗖](https://t.me/ABOUTT_TOXIC) 
+- [𝐖ᴀsᴛᴇ ](https://t.me/WASTEBOTZ)
+- [𝐖ᴀsᴛᴇ ](https://t.me/DAY1NOMORE) 
 
 ## Support / Channel
 
