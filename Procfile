@@ -1,1 +1,1 @@
-worker: python3 -m Waste
+worker: python3 -m Shashank

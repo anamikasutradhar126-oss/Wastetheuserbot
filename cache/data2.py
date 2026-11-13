@@ -1,4 +1,4 @@
-# © By Waste shukla (Github = itzshukla) You are motherfucker if you Don't gives credits.
+# © By Shashank shukla (Github = itzshukla) You are motherfucker if you Don't gives credits.
 
 class raids:
      raid = [

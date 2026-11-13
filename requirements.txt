@@ -26,7 +26,3 @@ gtts
 gpytranslate
 pyrofork
 py-tgcalls==2.3.3
-
-youtube-search-python
-
-yt-dlp>=2025.01.15
