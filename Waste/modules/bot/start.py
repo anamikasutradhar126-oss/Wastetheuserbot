@@ -37,7 +37,7 @@ class Data:
     buttons = [
         generate_single_button,
         [InlineKeyboardButton("🕸️ ᴡᴀsᴛᴇ", url=f"https://t.me/{OWNER_USERNAME}")],
-        [InlineKeyboardButton("📚 ʜᴇʟᴘ", callback_data="help"), InlineKeyboardButton("ᴀʙᴏᴜᴛ 🎶", callback_data="about")],
+        [InlineKeyboardButton("📚 ʜᴇʟᴘ", callback_data="force_menu"), InlineKeyboardButton("ᴀʙᴏᴜᴛ 🎶", callback_data="about")],
         [InlineKeyboardButton("⚡ ᴜᴘᴅᴀᴛᴇ's", url=f"https://t.me/{SUPPORT_USERNAME}"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ ⛈️", url=f"https://t.me/{SUPPORT_USERNAME}")],
         [InlineKeyboardButton("🌿 ʙᴏᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ 🌿", url=f"https://t.me/{OWNER_USERNAME}")],
     ]
@@ -152,21 +152,81 @@ async def _send_start_or_force(client: Client, message: Message):
     await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons))
 
 
-@app.on_message(filters.command("start") & filters.private)
+@app.on_message(filters.command("start", [".", "/"]) & filters.private)
 async def start_handler(client: Client, message: Message):
     await _send_start_or_force(client, message)
 
 
-@app.on_message(filters.command("force") & filters.private)
+@app.on_message(filters.command("force", [".", "/"]) & filters.private)
 async def force_handler(client: Client, message: Message):
-    await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+    # /force is the Force Commands entry point after the normal /start
+    # force-join gate has been satisfied. If the user has not joined yet,
+    # show the same join screen used by /start.
+    if not await _force_joined(client, message.from_user.id):
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+    try:
+        from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+    except Exception:
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="html")
 
 
-@app.on_message(filters.command("help") & filters.private)
+BOT_FORCE_TEXT = """<blockquote><b>❖ ＷＡＳＴＥ Ｘ ＵＢＯＴ - FORCE COMMANDS ❖</b>
+
+Tap a category below to open its commands and usage.
+
+<b>Music/Song, VcFight and AutoTextPromo have separate command menus.</b></blockquote>"""
+
+BOT_FORCE_CATEGORIES = [
+    ("🎵 MUSIC / SONG", "music"), ("⚔️ VCFIGHT", "vcfight"),
+    ("📢 AUTOTEXTPROMO", "autotextpromo"), ("🤖 AICHAT", "aichat"),
+    ("🎨 AUTOPIC", "autopic"), ("🛠️ ADMIN", "admin"),
+    ("😴 AFK", "afk"), ("🎬 ANIMATION", "animation"),
+    ("📣 PROMOTION", "promotion"), ("🔧 TOOLS", "tools"),
+]
+
+BOT_FORCE_COMMANDS = {
+    "music": "<blockquote><b>🎵 MUSIC / SONG</b>\n\n<code>.play song name</code>\n<code>/play song name</code>\n\nThe connected ID is used as the VC assistant/player.</blockquote>",
+    "vcfight": "<blockquote><b>⚔️ VCFIGHT</b>\n\n<code>.join &lt;group_id&gt;</code>\n<code>.allvc join</code> / <code>.allvc leave</code>\n<code>.fight</code> / <code>.fightstop</code>\n<code>.vcleave</code>\n<code>.vcstatus</code>\n<code>.recordings</code>\n<code>.addrc</code> / <code>.removerc</code> / <code>.myrc</code> / <code>.rcinfo</code>\n\nUse either <code>.</code> or <code>/</code>.</blockquote>",
+    "autotextpromo": "<blockquote><b>📢 AUTOTEXTPROMO</b>\n\n<code>.autotextpromo on</code>\n<code>.autotextpromo off</code>\n<code>/autotextpromo on</code>\n<code>/autotextpromo off</code></blockquote>",
+    "aichat": "<blockquote><b>🤖 AICHAT</b>\n\nUse the existing AI chat commands from the connected userbot. Both <code>.</code> and <code>/</code> prefixes are supported where registered.</blockquote>",
+    "autopic": "<blockquote><b>🎨 AUTOPIC</b>\n\nUse <code>.autopic</code> / <code>/autopic</code> and the existing Autopic settings.</blockquote>",
+    "admin": "<blockquote><b>🛠️ ADMIN</b>\n\nExisting administrator commands remain available through the connected userbot.</blockquote>",
+    "afk": "<blockquote><b>😴 AFK</b>\n\n<code>.afk</code> / <code>/afk</code> and the existing AFK settings.</blockquote>",
+    "animation": "<blockquote><b>🎬 ANIMATION</b>\n\nExisting animation commands are available from the connected userbot.</blockquote>",
+    "promotion": "<blockquote><b>📣 PROMOTION</b>\n\n<code>.promotion &lt;text&gt;</code>\n<code>.autotextpromo on/off</code></blockquote>",
+    "tools": "<blockquote><b>🔧 TOOLS</b>\n\nAll existing tool commands remain available from the connected userbot.</blockquote>",
+}
+
+def _bot_force_keyboard():
+    rows = []
+    for i in range(0, len(BOT_FORCE_CATEGORIES), 2):
+        row = [InlineKeyboardButton(BOT_FORCE_CATEGORIES[i][0], callback_data=f"botforce:{BOT_FORCE_CATEGORIES[i][1]}")]
+        if i + 1 < len(BOT_FORCE_CATEGORIES):
+            row.append(InlineKeyboardButton(BOT_FORCE_CATEGORIES[i+1][0], callback_data=f"botforce:{BOT_FORCE_CATEGORIES[i+1][1]}"))
+        rows.append(row)
+    return InlineKeyboardMarkup(rows)
+
+@app.on_message(filters.command("help", [".", "/"]) & filters.private)
 async def help_command(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-    await message.reply_text(Data.HELP, reply_markup=InlineKeyboardMarkup(Data.home_buttons), parse_mode="html")
+    arg = " ".join(message.command[1:]).strip().lower() if len(message.command) > 1 else ""
+    if arg:
+        aliases = {"song": "music", "play": "music", "vcfight": "vcfight", "autotext": "autotextpromo"}
+        key = aliases.get(arg, arg)
+        if key in BOT_FORCE_COMMANDS:
+            return await message.reply_photo(ALIVE_PIC, caption=BOT_FORCE_COMMANDS[key], reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode="html")
+    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="html")
+
+@app.on_callback_query(filters.regex(r"^botforce:"))
+async def bot_force_callback(client: Client, query: CallbackQuery):
+    await query.answer()
+    key = query.data.split(":", 1)[1]
+    if key == "menu":
+        return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=BOT_FORCE_TEXT, parse_mode="html"), reply_markup=_bot_force_keyboard())
+    text = BOT_FORCE_COMMANDS.get(key, BOT_FORCE_TEXT)
+    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode="html")
 
 
 @app.on_callback_query(filters.regex(r"^start_force_check$"))
@@ -177,7 +237,7 @@ async def start_force_check(client: Client, query: CallbackQuery):
     await query.answer("Joined successfully ✓")
     await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START), reply_markup=InlineKeyboardMarkup(Data.buttons))
 
-@app.on_message(filters.command("about") & filters.private)
+@app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
     await message.reply_text(Data.ABOUT, reply_markup=InlineKeyboardMarkup(Data.home_buttons))
 
@@ -188,7 +248,11 @@ async def callback_handler(client: Client, query: CallbackQuery):
     if data == "home":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START), reply_markup=InlineKeyboardMarkup(Data.buttons))
     elif data == "help":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+        try:
+            from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode="html"), reply_markup=_force_keyboard())
+        except Exception:
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "about":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "donate":
@@ -196,7 +260,7 @@ async def callback_handler(client: Client, query: CallbackQuery):
     elif data == "guide":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.GUIDE), reply_markup=InlineKeyboardMarkup(Data.back_buttons))
 
-@app.on_message(filters.command(["play", "vplay"]) & filters.group)
+@app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
 async def group_play_command(client: Client, message: Message):
     parts = message.text.split(None, 1) if message.text else []
     query = parts[1].strip() if len(parts) > 1 else ""
@@ -206,15 +270,25 @@ async def group_play_command(client: Client, message: Message):
         return await message.reply_text("❌ No connected ID is online right now.")
 
     hosted = None
-    for candidate in list(active_sessions):
-        try:
-            member = await candidate.get_chat_member(message.chat.id, "me")
-            status = getattr(member.status, "value", member.status)
-            if status not in {"left", "kicked", "banned"}:
+    # The bot is only the control interface. Prefer the connected account
+    # belonging to the person who issued the command, then fall back to an
+    # account that is a member of the group.
+    requester_id = message.from_user.id if message.from_user else None
+    if requester_id is not None:
+        for candidate in list(active_sessions):
+            if getattr(candidate, "_waste_owner_uid", None) == requester_id:
                 hosted = candidate
                 break
-        except Exception:
-            continue
+    if hosted is None:
+        for candidate in list(active_sessions):
+            try:
+                member = await candidate.get_chat_member(message.chat.id, "me")
+                status = getattr(member.status, "value", member.status)
+                if status not in {"left", "kicked", "banned"}:
+                    hosted = candidate
+                    break
+            except Exception:
+                continue
     hosted = hosted or active_sessions[0]
 
     status = await message.reply_text("🔎 Searching YouTube...")
@@ -231,7 +305,7 @@ async def group_play_command(client: Client, message: Message):
         else:
             await asyncio.sleep(60 * 60 * 4)
     except Exception as exc:
-        await status.edit_text(f"❌ Music failed: `{type(exc).__name__}`")
+        await status.edit_text(f"❌ Music failed: `{type(exc).__name__}`\n\n`{str(exc)[:500]}`")
     finally:
         if path:
             try:
@@ -241,7 +315,7 @@ async def group_play_command(client: Client, message: Message):
                 pass
 
 
-@app.on_message(filters.command("subscription") & filters.private & filters.user(OWNER_ID))
+@app.on_message(filters.command("subscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def subscription_cmd(client: Client, message: Message):
     if len(message.command) < 2:
         return await message.reply_text("Usage: /subscription <user_id> [username]")
@@ -270,7 +344,7 @@ async def subscription_cmd(client: Client, message: Message):
         log.warning("Could not notify subscriber %s: %s", uid, exc)
     await message.reply_text(f"✅ Subscription activated for `{uid}` for 30 days.\nExpires: `{expires.isoformat()}`")
 
-@app.on_message(filters.command("disubscription") & filters.private & filters.user(OWNER_ID))
+@app.on_message(filters.command("disubscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def disubscription_cmd(client: Client, message: Message):
     if len(message.command) < 2:
         return await message.reply_text("Usage: /disubscription <user_id> [username]")
@@ -298,7 +372,7 @@ async def disubscription_cmd(client: Client, message: Message):
         log.warning("Could not notify unsubscribed user %s: %s", uid, exc)
     await message.reply_text("✅ Subscription removed." if result.deleted_count else "ℹ️ No active subscription found.")
 
-@app.on_message(filters.command("clone") & filters.private)
+@app.on_message(filters.command("clone", [".", "/"]) & filters.private)
 async def clone(bot: Client, msg: Message):
     if len(msg.command) < 2:
         return await msg.reply("Usage: /clone <session_string>")
@@ -322,7 +396,7 @@ async def clone(bot: Client, msg: Message):
     except Exception as e:
         await msg.reply(f"**ERROR:** `{e}`")
 
-@app.on_message(filters.command("add") & filters.private)
+@app.on_message(filters.command("add", [".", "/"]) & filters.private)
 async def add_session_command(client: Client, message: Message):
     uid = message.from_user.id
     if _session_doc(uid):
@@ -330,7 +404,7 @@ async def add_session_command(client: Client, message: Message):
     await message.reply("📲 ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):")
     user_sessions[uid] = {"step": "awaiting_phone"}
 
-@app.on_message(filters.command("remove") & filters.private)
+@app.on_message(filters.command("remove", [".", "/"]) & filters.private)
 async def remove_session(client: Client, msg: Message):
     uid = msg.from_user.id
     for hosted in list(active_sessions):

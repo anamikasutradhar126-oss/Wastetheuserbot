@@ -54,7 +54,9 @@ def _force_keyboard():
         [InlineKeyboardButton("🎵 MUSIC / SONG", callback_data="force_mod:Music"), InlineKeyboardButton("⚔️ VCFIGHT", callback_data="force_mod:VcFight")],
         [InlineKeyboardButton("🎙️ RECORDINGS", callback_data="force_recordings"), InlineKeyboardButton("📢 AUTOTEXTPROMO", callback_data="force_mod:AutoTextPromo")],
     ]
-    keys = [k for k in CMD_HELP.keys() if k not in {"Music", "VcFight", "AutoTextPromo", "Promotion"}]
+    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat"]
+    keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys())))
+    keys = [k for k in keys if k not in {"Music", "VcFight", "AutoTextPromo", "Promotion"}]
     keys = sorted(keys, key=str.lower)
     for i in range(0, len(keys), 2):
         row = [InlineKeyboardButton(f"📌 {keys[i]}", callback_data=f"force_mod:{keys[i]}")]
@@ -115,7 +117,7 @@ async def _send_force_join(client, message):
 
 def _find_help_key(name: str):
     name = (name or "").strip().lower()
-    aliases = {"music": "Music", "song": "Music", "autotextpromo": "AutoTextPromo", "autotext": "AutoTextPromo", "vcfight": "VcFight", "recordings": "VcFight"}
+    aliases = {"music": "Music", "song": "Music", "play": "Music", "autotextpromo": "AutoTextPromo", "autotext": "AutoTextPromo", "vcfight": "VcFight", "recordings": "VcFight", "record": "VcFight"}
     if name in aliases:
         return aliases[name]
     for key in CMD_HELP:
@@ -133,7 +135,7 @@ def _module_text(key):
             return f"<blockquote><b>❌ {key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
     lines = [f"<blockquote><b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
     for command, desc in commands.items():
-        lines.append(f"<blockquote>• <code>.{command}</code>\n  {desc}</blockquote>")
+        lines.append(f"<blockquote>• <code>.{command}</code>  |  <code>/{command}</code>\n  {desc}</blockquote>")
     return "\n".join(lines)
 
 

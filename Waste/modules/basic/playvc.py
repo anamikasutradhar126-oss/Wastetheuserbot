@@ -21,19 +21,35 @@ def _download_song(query: str):
     job_id = uuid.uuid4().hex
     outtmpl = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
     options = {
-        "format": "bestaudio/best",
+        "format": "bestaudio[ext=m4a]/bestaudio/best",
         "outtmpl": outtmpl,
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
         "default_search": "ytsearch1",
         "source_address": "0.0.0.0",
+        "geo_bypass": True,
+        "retries": 3,
+        "fragment_retries": 3,
+        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
     }
     if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
         options["cookiefile"] = "cookies.txt"
 
-    with yt_dlp.YoutubeDL(options) as ydl:
-        info = ydl.extract_info(query, download=True)
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            info = ydl.extract_info(query, download=True)
+    except Exception as first_error:
+        # YouTube can reject one player client/format. Retry with a different
+        # client set before surfacing the failure to the user.
+        fallback = dict(options)
+        fallback["format"] = "bestaudio/best"
+        fallback["extractor_args"] = {"youtube": {"player_client": ["web_safari", "android"]}}
+        try:
+            with yt_dlp.YoutubeDL(fallback) as ydl:
+                info = ydl.extract_info(query, download=True)
+        except Exception:
+            raise first_error
         if info and info.get("entries"):
             info = info["entries"][0]
         if not info:

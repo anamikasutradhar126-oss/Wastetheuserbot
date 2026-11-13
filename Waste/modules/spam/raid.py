@@ -275,7 +275,7 @@ async def eraid(xspam: Client, e: Message):
 
 
 @Client.on_message(
-    filters.command(["randi"], ".", "") & (filters.me | filters.user(SUDO_USER))
+    filters.command(["randi"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
 )
 async def wordraid(xspam: Client, e: Message):  
       Waste = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)
@@ -333,3 +333,12 @@ async def wordraid(xspam: Client, e: Message):
                     await asyncio.sleep(0.10)
       else:
           await e.reply_text("Usage: .randi count username")
+
+
+add_command_help("raid", [
+    ["hiraid", "Hiraid command: `.hiraid <count> <username>` or reply to a user with `.hiraid <count>`."],
+    ["pbraid", "Pbraid command: `.pbraid <count> <username>` or reply with `.pbraid <count>`."],
+    ["mraid", "Mraid command: `.mraid <count> <username>` or reply with `.mraid <count>`."],
+    ["eraid", "Era id command: `.eraid <count> <username>` or reply with `.eraid <count>`."],
+    ["randi", "Random-word raid command: `.randi <count> <username>` or reply with `.randi <count>`."],
+])
