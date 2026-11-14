@@ -151,15 +151,63 @@ To unlock the bot, join both official channels below.
 ⚡ <i>Powerful • Fast • Secure</i></blockquote>"""
 
 
+async def _send_force_screen(client: Client, message: Message):
+    """Always return a visible response when /start cannot pass verification."""
+    try:
+        return await client.send_photo(
+            message.chat.id,
+            ALIVE_PIC,
+            caption=FORCE_CAPTION,
+            reply_markup=_force_markup(),
+            parse_mode="html",
+        )
+    except Exception:
+        return await client.send_message(
+            message.chat.id,
+            FORCE_CAPTION,
+            reply_markup=_force_markup(),
+            parse_mode="html",
+        )
+
+
 async def _send_start_or_force(client: Client, message: Message):
-    if not await _force_joined(client, message.from_user.id):
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-    await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons))
+    user_id = message.from_user.id if message.from_user else None
+    if not user_id:
+        return await _send_force_screen(client, message)
+    try:
+        joined = await _force_joined(client, user_id)
+    except Exception:
+        joined = False
+    if not joined:
+        return await _send_force_screen(client, message)
+    try:
+        return await client.send_photo(
+            message.chat.id,
+            ALIVE_PIC,
+            caption=Data.START,
+            reply_markup=InlineKeyboardMarkup(Data.buttons),
+        )
+    except Exception:
+        return await client.send_message(
+            message.chat.id,
+            Data.START,
+            reply_markup=InlineKeyboardMarkup(Data.buttons),
+        )
 
 
-@app.on_message(filters.command("start", [".", "/"]) & filters.private)
+@app.on_message(filters.command("start", prefixes=["/", "."]) & filters.private)
 async def start_handler(client: Client, message: Message):
-    await _send_start_or_force(client, message)
+    try:
+        await _send_start_or_force(client, message)
+    except Exception as exc:
+        log.exception("/start failed for user %s", getattr(message.from_user, "id", "unknown"))
+        try:
+            await message.reply_text(
+                "⚠️ WASTE X UBOT could not open the menu right now.\n\n"
+                "Please try /start again. If the problem continues, make sure the bot is an admin in both Force Join channels.",
+            )
+        except Exception:
+            pass
 
 
 @app.on_message(filters.command("force", [".", "/"]) & filters.private)
@@ -264,61 +312,6 @@ async def callback_handler(client: Client, query: CallbackQuery):
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.DONATE), reply_markup=InlineKeyboardMarkup(Data.guide_buttons))
     elif data == "guide":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.GUIDE), reply_markup=InlineKeyboardMarkup(Data.back_buttons))
-
-@app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
-async def group_play_command(client: Client, message: Message):
-    parts = message.text.split(None, 1) if message.text else []
-    query = parts[1].strip() if len(parts) > 1 else ""
-    if not query:
-        return await message.reply_text("🎵 Usage: /play song name")
-    if not active_sessions:
-        return await message.reply_text("❌ No connected ID is online right now.")
-
-    hosted = None
-    # The bot is only the control interface. Prefer the connected account
-    # belonging to the person who issued the command, then fall back to an
-    # account that is a member of the group.
-    requester_id = message.from_user.id if message.from_user else None
-    if requester_id is not None:
-        for candidate in list(active_sessions):
-            if getattr(candidate, "_waste_owner_uid", None) == requester_id:
-                hosted = candidate
-                break
-    if hosted is None:
-        for candidate in list(active_sessions):
-            try:
-                member = await candidate.get_chat_member(message.chat.id, "me")
-                status = getattr(member.status, "value", member.status)
-                if status not in {"left", "kicked", "banned"}:
-                    hosted = candidate
-                    break
-            except Exception:
-                continue
-    hosted = hosted or active_sessions[0]
-
-    status = await message.reply_text("🔎 Searching YouTube...")
-    path = None
-    try:
-        from Waste.modules.basic.playvc import play_song_in_chat
-        path, info = await play_song_in_chat(hosted, message.chat.id, query)
-        title = info.get("title") or query
-        duration = info.get("duration_string") or "Unknown"
-        await status.edit_text(f"▶️ Now Playing\n\n🎵 {title}\n⏱️ {duration}\n🔊 Playing in this group's Voice Chat")
-        seconds = info.get("duration") or 0
-        if seconds:
-            await asyncio.sleep(min(float(seconds) + 10, 60 * 60 * 4))
-        else:
-            await asyncio.sleep(60 * 60 * 4)
-    except Exception as exc:
-        await status.edit_text(f"❌ Music failed: `{type(exc).__name__}`\n\n`{str(exc)[:500]}`")
-    finally:
-        if path:
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except OSError:
-                pass
-
 
 @app.on_message(filters.command("subscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def subscription_cmd(client: Client, message: Message):

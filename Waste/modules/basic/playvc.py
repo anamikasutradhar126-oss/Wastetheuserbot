@@ -20,7 +20,7 @@ def _download_song(query: str):
 
     job_id = uuid.uuid4().hex
     outtmpl = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
-    options = {
+    base_options = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "outtmpl": outtmpl,
         "noplaylist": True,
@@ -31,30 +31,34 @@ def _download_song(query: str):
         "geo_bypass": True,
         "retries": 3,
         "fragment_retries": 3,
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
     }
-    if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
-        options["cookiefile"] = "cookies.txt"
+    cookie_candidates = ["cookies.txt", os.getenv("YOUTUBE_COOKIES_FILE", "")]
+    for cookie_path in cookie_candidates:
+        if cookie_path and os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
+            base_options["cookiefile"] = cookie_path
+            break
 
-    try:
-        with yt_dlp.YoutubeDL(options) as ydl:
-            info = ydl.extract_info(query, download=True)
-    except Exception as first_error:
-        # YouTube can reject one player client/format. Retry with a different
-        # client set before surfacing the failure to the user.
-        fallback = dict(options)
-        fallback["format"] = "bestaudio/best"
-        fallback["extractor_args"] = {"youtube": {"player_client": ["web_safari", "android"]}}
+    attempts = [
+        ["android_vr", "ios", "mweb", "web_safari"],
+        ["tv_embedded", "web_embedded", "ios"],
+    ]
+    last_error = None
+
+    for clients in attempts:
+        options = dict(base_options)
+        options["extractor_args"] = {"youtube": {"player_client": clients}}
         try:
-            with yt_dlp.YoutubeDL(fallback) as ydl:
+            with yt_dlp.YoutubeDL(options) as ydl:
                 info = ydl.extract_info(query, download=True)
-        except Exception:
-            raise first_error
-        if info and info.get("entries"):
-            info = info["entries"][0]
-        if not info:
-            raise RuntimeError("No result found")
-        requested = ydl.prepare_filename(info)
+                if info and info.get("entries"):
+                    info = next((entry for entry in info["entries"] if entry), None)
+                if not info:
+                    raise RuntimeError("No YouTube result found")
+                requested = ydl.prepare_filename(info)
+        except Exception as exc:
+            last_error = exc
+            continue
+
         path = requested
         if not os.path.exists(path):
             base = os.path.splitext(requested)[0]
@@ -65,9 +69,11 @@ def _download_song(query: str):
             ]
             if matches:
                 path = matches[0]
-        if not os.path.exists(path):
-            raise FileNotFoundError("Downloaded audio file not found")
-        return path, info
+        if os.path.exists(path):
+            return path, info
+        last_error = FileNotFoundError("Downloaded audio file not found")
+
+    raise last_error or RuntimeError("YouTube download failed")
 
 
 async def play_song_in_chat(client, chat_id: int, query: str):
@@ -124,7 +130,8 @@ async def play_handler(client, message):
         log.exception("Music play failed")
         try:
             await status.edit(
-                f"<blockquote>❌ <b>Music failed</b>\n\n<code>{type(exc).__name__}</code></blockquote>",
+                f"<blockquote>❌ <b>Music failed</b>\n\n<code>{type(exc).__name__}</code>\n\n"
+                "If YouTube asks for sign-in, add a valid cookies.txt file to the project and try again.</blockquote>",
                 parse_mode="html",
             )
         except Exception:
