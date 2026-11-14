@@ -34,13 +34,14 @@ class Data:
     home_buttons = [generate_single_button, [InlineKeyboardButton("🏠 ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ 🏠", callback_data="home")]]
     back_buttons = [donate_button, [InlineKeyboardButton("🏠 ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ 🏠", callback_data="home")]]
     guide_buttons = [[InlineKeyboardButton("🏠 ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ 🏠", callback_data="home")]]
+    # Main menu shown after the force-join check. Keep this layout aligned with
+    # the requested WASTE X UBOT start screen: one full-width guide row, then
+    # two-column utility rows.
     buttons = [
-        [InlineKeyboardButton("🔗 ᴄᴏɴɴᴇᴄᴛ ɪᴅ", callback_data="connect_id")],
-        [InlineKeyboardButton("📋 ᴍʏ ᴀᴄᴄᴏᴜɴᴛs", callback_data="manage_ids"), InlineKeyboardButton("💳 ᴍʏ ᴄʀᴇᴅɪᴛs", callback_data="credits")],
-        [InlineKeyboardButton("🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ", callback_data="refer"), InlineKeyboardButton("💎 ᴘʟᴀɴs & ᴘʀɪᴄɪɴɢ", callback_data="plans")],
-        [InlineKeyboardButton("❓ ʜᴇʟᴘ", callback_data="force_menu"), InlineKeyboardButton("👤 ᴏᴡɴᴇʀ ↗", url=f"https://t.me/{OWNER_USERNAME}")],
-        [InlineKeyboardButton("▶️ ʜᴏᴡ ᴛᴏ ᴜsᴇ ʙᴏᴛ ↗", callback_data="guide")],
-        [InlineKeyboardButton("🛠️ ᴍᴀɴᴀɢᴇ ᴍʏ ɪᴅs", callback_data="manage_ids")],
+        [InlineKeyboardButton("📖 BASIC GUIDE 🌧️", callback_data="guide")],
+        [InlineKeyboardButton("🗑️ WASTE", callback_data="about"), InlineKeyboardButton("ℹ️ ABOUT", callback_data="about")],
+        [InlineKeyboardButton("📚 HELP", callback_data="force_menu"), InlineKeyboardButton("🎵 MUSIC", callback_data="bot_music")],
+        [InlineKeyboardButton("⚡ UPDATE'S ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("🛡️ SUPPORT ↗", url="https://t.me/wasteBotz")],
     ]
     START = """**┌────── ˹ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ˼ ⏤͟͟͞͞‌‌‌‌★**
 **┆◍ ʜᴇʏ, ɪ ᴀᴍ : [ᴡᴀsᴛᴇ ꭙ 𝐔sᴇʀвσᴛ](https://t.me/Wasteuserrbot)**
@@ -117,23 +118,25 @@ def _sub_active(uid):
 
 
 async def _force_joined(client: Client, user_id: int) -> bool:
-    # The bot must be able to inspect membership in both channels.  When a
-    # channel is reachable but the user is not a member, return False.
-    # For transient Telegram errors, retry once before showing the join gate.
+    """Verify membership in both configured force-join channels.
+
+    Telegram only lets a bot reliably inspect channel membership when the bot
+    can access the channel (normally by being an administrator). We accept all
+    active member/admin/owner states and reject only non-members.
+    """
     for channel in (f"@{FORCE_SUPPORT}", f"@{FORCE_UPDATES}"):
-        last_error = None
-        for _ in range(2):
-            try:
-                member = await client.get_chat_member(channel, user_id)
-                status = getattr(member.status, "value", member.status)
-                if status in {"left", "kicked", "banned"}:
-                    return False
-                break
-            except Exception as exc:
-                last_error = exc
-                await asyncio.sleep(0.25)
-        else:
-            log.error("Force-join verification failed for %s: %s", channel, last_error)
+        try:
+            member = await client.get_chat_member(channel, user_id)
+            status = getattr(member.status, "value", str(member.status)).lower()
+            # Telegram can report a joined user as `restricted` when the
+            # channel has restrictions enabled. `is_member=True` still means
+            # the user is a current member, so do not reject that state.
+            if status in {"left", "kicked", "banned"}:
+                return False
+            if status == "restricted" and getattr(member, "is_member", True) is False:
+                return False
+        except Exception as exc:
+            log.warning("Force-join check failed for %s: %s", channel, exc)
             return False
     return True
 
@@ -160,63 +163,15 @@ To unlock the bot, join both official channels below.
 ⚡ <i>Powerful • Fast • Secure</i></blockquote>"""
 
 
-async def _send_force_screen(client: Client, message: Message):
-    """Always return a visible response when /start cannot pass verification."""
-    try:
-        return await client.send_photo(
-            message.chat.id,
-            ALIVE_PIC,
-            caption=FORCE_CAPTION,
-            reply_markup=_force_markup(),
-            parse_mode="html",
-        )
-    except Exception:
-        return await client.send_message(
-            message.chat.id,
-            FORCE_CAPTION,
-            reply_markup=_force_markup(),
-            parse_mode="html",
-        )
-
-
 async def _send_start_or_force(client: Client, message: Message):
-    user_id = message.from_user.id if message.from_user else None
-    if not user_id:
-        return await _send_force_screen(client, message)
-    try:
-        joined = await _force_joined(client, user_id)
-    except Exception:
-        joined = False
-    if not joined:
-        return await _send_force_screen(client, message)
-    try:
-        return await client.send_photo(
-            message.chat.id,
-            ALIVE_PIC,
-            caption=Data.START,
-            reply_markup=InlineKeyboardMarkup(Data.buttons),
-        )
-    except Exception:
-        return await client.send_message(
-            message.chat.id,
-            Data.START,
-            reply_markup=InlineKeyboardMarkup(Data.buttons),
-        )
+    if not await _force_joined(client, message.from_user.id):
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+    await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons))
 
 
-@app.on_message(filters.command("start", prefixes=["/", "."]) & filters.private)
+@app.on_message(filters.command("start", [".", "/"]) & filters.private)
 async def start_handler(client: Client, message: Message):
-    try:
-        await _send_start_or_force(client, message)
-    except Exception as exc:
-        log.exception("/start failed for user %s", getattr(message.from_user, "id", "unknown"))
-        try:
-            await message.reply_text(
-                "⚠️ WASTE X UBOT could not open the menu right now.\n\n"
-                "Please try /start again. If the problem continues, make sure the bot is an admin in both Force Join channels.",
-            )
-        except Exception:
-            pass
+    await _send_start_or_force(client, message)
 
 
 @app.on_message(filters.command("force", [".", "/"]) & filters.private)
@@ -239,47 +194,66 @@ Tap a category below to open its commands and usage.
 
 <b>Music/Song, VcFight and AutoTextPromo have separate command menus.</b></blockquote>"""
 
-BOT_FORCE_CATEGORIES = [
-    ("🎵 MUSIC / SONG", "music"), ("⚔️ VCFIGHT", "vcfight"),
-    ("📢 AUTOTEXTPROMO", "autotextpromo"), ("🤖 AICHAT", "aichat"),
-    ("🎨 AUTOPIC", "autopic"), ("🛠️ ADMIN", "admin"),
-    ("😴 AFK", "afk"), ("🎬 ANIMATION", "animation"),
-    ("📣 PROMOTION", "promotion"), ("🔧 TOOLS", "tools"),
+BOT_FORCE_ALL = [
+    "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall",
+    "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam",
+    "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify",
+    "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid",
+    "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos",
+    "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools",
+    "vulgar", "waifu", "weather", "VcFight", "promotion", "aichat", "Music", "AutoTextPromo",
 ]
 
 BOT_FORCE_COMMANDS = {
-    "music": "<blockquote><b>🎵 MUSIC / SONG</b>\n\n<code>.play song name</code>\n<code>/play song name</code>\n\nThe connected ID is used as the VC assistant/player.</blockquote>",
-    "vcfight": "<blockquote><b>⚔️ VCFIGHT</b>\n\n<code>.join &lt;group_id&gt;</code>\n<code>.allvc join</code> / <code>.allvc leave</code>\n<code>.fight</code> / <code>.fightstop</code>\n<code>.vcleave</code>\n<code>.vcstatus</code>\n<code>.recordings</code>\n<code>.addrc</code> / <code>.removerc</code> / <code>.myrc</code> / <code>.rcinfo</code>\n\nUse either <code>.</code> or <code>/</code>.</blockquote>",
-    "autotextpromo": "<blockquote><b>📢 AUTOTEXTPROMO</b>\n\n<code>.autotextpromo on</code>\n<code>.autotextpromo off</code>\n<code>/autotextpromo on</code>\n<code>/autotextpromo off</code></blockquote>",
-    "aichat": "<blockquote><b>🤖 AICHAT</b>\n\nUse the existing AI chat commands from the connected userbot. Both <code>.</code> and <code>/</code> prefixes are supported where registered.</blockquote>",
-    "autopic": "<blockquote><b>🎨 AUTOPIC</b>\n\nUse <code>.autopic</code> / <code>/autopic</code> and the existing Autopic settings.</blockquote>",
-    "admin": "<blockquote><b>🛠️ ADMIN</b>\n\nExisting administrator commands remain available through the connected userbot.</blockquote>",
-    "afk": "<blockquote><b>😴 AFK</b>\n\n<code>.afk</code> / <code>/afk</code> and the existing AFK settings.</blockquote>",
-    "animation": "<blockquote><b>🎬 ANIMATION</b>\n\nExisting animation commands are available from the connected userbot.</blockquote>",
-    "promotion": "<blockquote><b>📣 PROMOTION</b>\n\n<code>.promotion &lt;text&gt;</code>\n<code>.autotextpromo on/off</code></blockquote>",
-    "tools": "<blockquote><b>🔧 TOOLS</b>\n\nAll existing tool commands remain available from the connected userbot.</blockquote>",
+    "music": "<blockquote><b>🎵 MUSIC / SONG</b>\\n\\n<code>.play song name</code>\\n<code>/play song name</code>\\n<code>.song song name</code>\\n<code>/song song name</code>\\n\\nThe connected ID plays the requested song in the Voice Chat of the same group where the command is sent.</blockquote>",
+    "vcfight": "<blockquote><b>⚔️ VCFIGHT</b>\\n\\n<code>.vcfight</code> / <code>/vcfight</code> — Start VC Fight\\n<code>.vcstop</code> — Stop\\n<code>.vcjoin</code> — Join VC\\n<code>.vcleave</code> — Leave VC\\n<code>.vcall</code> — Call all members\\n<code>.vcmute</code> / <code>.vcunmute</code>\\n<code>.vclogs</code>\\n\\n<b>Recordings:</b> <code>.addrc</code>, <code>.removerc</code>, <code>.myrc</code>, <code>.rcinfo</code>, <code>.recordings</code>.</blockquote>",
+    "autotextpromo": "<blockquote><b>📢 AUTOTEXTPROMO</b>\\n\\n<code>.autotextpromo on</code>\\n<code>.autotextpromo off</code>\\n<code>/autotextpromo on</code>\\n<code>/autotextpromo off</code></blockquote>",
+    "aichat": "<blockquote><b>🤖 AICHAT</b>\\n\\nAI chat commands from the connected userbot. Use the connected ID for the AI feature.</blockquote>",
+    "autopic": "<blockquote><b>🎨 AUTOPIC</b>\\n\\nAuto profile-picture commands and settings.</blockquote>",
+    "admin": "<blockquote><b>🛠️ ADMIN</b>\\n\\nAdministrator and moderation commands.</blockquote>",
+    "afk": "<blockquote><b>😴 AFK</b>\\n\\n<code>.afk</code> — Enable/update AFK. Existing AFK settings remain available.</blockquote>",
+    "animation": "<blockquote><b>🎬 ANIMATION</b>\\n\\nText animation commands.</blockquote>",
+    "promotion": "<blockquote><b>📣 PROMOTION</b>\\n\\nPromotion tools and AutoTextPromo controls.</blockquote>",
 }
+
 
 def _bot_force_keyboard():
     rows = []
-    for i in range(0, len(BOT_FORCE_CATEGORIES), 2):
-        row = [InlineKeyboardButton(BOT_FORCE_CATEGORIES[i][0], callback_data=f"botforce:{BOT_FORCE_CATEGORIES[i][1]}")]
-        if i + 1 < len(BOT_FORCE_CATEGORIES):
-            row.append(InlineKeyboardButton(BOT_FORCE_CATEGORIES[i+1][0], callback_data=f"botforce:{BOT_FORCE_CATEGORIES[i+1][1]}"))
+    for i in range(0, len(BOT_FORCE_ALL), 2):
+        row = [InlineKeyboardButton(f"📌 {BOT_FORCE_ALL[i]}", callback_data=f"botforce:{BOT_FORCE_ALL[i]}")]
+        if i + 1 < len(BOT_FORCE_ALL):
+            row.append(InlineKeyboardButton(f"📌 {BOT_FORCE_ALL[i+1]}", callback_data=f"botforce:{BOT_FORCE_ALL[i+1]}"))
         rows.append(row)
     return InlineKeyboardMarkup(rows)
+
+
+def _bot_force_details(key: str):
+    """Return the full command documentation from the connected userbot help registry."""
+    try:
+        from Waste.modules.help.help import _module_text
+        return _module_text(key)
+    except Exception as exc:
+        log.warning("Force detail lookup failed for %s: %s", key, exc)
+        return f"<blockquote><b>❖ {str(key).upper()} COMMANDS</b>\n\nNo command documentation is currently registered for this module.</blockquote>"
+
 
 @app.on_message(filters.command("help", [".", "/"]) & filters.private)
 async def help_command(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-    from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _module_text, _find_help_key
     arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     if arg:
-        key = _find_help_key(arg)
-        if key:
-            return await message.reply_photo(ALIVE_PIC, caption=_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
-    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        # Every module shown in Force Commands resolves to its real registered
+        # help data, including aliases such as aichat -> AI Chat.
+        text = _bot_force_details(arg)
+        return await message.reply_photo(
+            ALIVE_PIC,
+            caption=text,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]),
+            parse_mode="html",
+        )
+    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="html")
+
 
 @app.on_callback_query(filters.regex(r"^botforce:"))
 async def bot_force_callback(client: Client, query: CallbackQuery):
@@ -287,7 +261,7 @@ async def bot_force_callback(client: Client, query: CallbackQuery):
     key = query.data.split(":", 1)[1]
     if key == "menu":
         return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=BOT_FORCE_TEXT, parse_mode="html"), reply_markup=_bot_force_keyboard())
-    text = BOT_FORCE_COMMANDS.get(key, BOT_FORCE_TEXT)
+    text = _bot_force_details(key)
     await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode="html")
 
 
@@ -315,40 +289,49 @@ async def callback_handler(client: Client, query: CallbackQuery):
             await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode="html"), reply_markup=_force_keyboard())
         except Exception:
             await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+    elif data == "bot_music":
+        await query.answer()
+        music_text = """<blockquote><b>🎵 WASTE X UBOT — MUSIC</b>
+
+<code>.play song name</code>
+<code>/play song name</code>
+<code>.song song name</code>
+<code>/song song name</code>
+
+The connected ID plays the song in the Voice Chat of the same group where the command is sent.</blockquote>"""
+        await query.message.edit_caption(music_text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 MAIN MENU", callback_data="home")]]), parse_mode="html")
     elif data == "connect_id":
-        connect_text = """<blockquote><b>🔗 CONNECT YOUR ID</b>
-
-Send <code>/add</code> to connect your Telegram account.
-
-You will receive an OTP and, if enabled, your 2FA password. After login, your connected ID is hosted automatically.
-
-🎵 Music and VC features run through the connected ID.</blockquote>"""
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=connect_text, parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 CONNECT ID", callback_data="connect_start")], [InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
-    elif data == "connect_start":
-        await query.answer("Send /add in this chat to connect your ID.", show_alert=True)
-    elif data == "manage_ids":
+        await query.answer()
+        await query.message.edit_caption("<blockquote><b>🔗 CONNECT ID</b>\n\nSend <code>/add</code> to connect your Telegram ID and start the userbot.\n\nAfter login, the connected ID can use all Force Commands and Music/VcFight features.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("➕ CONNECT NOW", callback_data="do_add")], [InlineKeyboardButton("🔙 HOME", callback_data="home")]]), parse_mode="html")
+    elif data == "do_add":
+        await query.answer()
+        await query.message.reply_text("📲 Send /add to begin connecting your Telegram ID.")
+    elif data == "my_accounts":
         uid = query.from_user.id
         doc = _session_doc(uid)
-        if doc:
-            name = doc.get("name") or "Connected account"
-            username = doc.get("username")
-            account = f"{name} (@{username})" if username else name
-            text = f"<blockquote><b>🛠️ MANAGE MY IDS</b>\n\n✅ Connected: <b>{account}</b>\n\nUse <code>/remove</code> to disconnect this ID.\nUse <code>/add</code> after removal to connect another ID.</blockquote>"
-        else:
-            text = "<blockquote><b>🛠️ MANAGE MY IDS</b>\n\n❌ No connected ID found.\n\nUse <code>/add</code> to connect your Telegram account.</blockquote>"
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=text, parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+        text = "<blockquote><b>📋 MY ACCOUNTS</b>\n\n" + ("✅ One connected account is active." if doc else "❌ No connected account yet.\n\nUse /add to connect one.") + "</blockquote>"
+        await query.answer()
+        await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 HOME", callback_data="home")]]), parse_mode="html")
     elif data == "credits":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption="<blockquote><b>💳 MY CREDITS</b>\n\nCredits are managed by the bot owner/subscription system.</blockquote>", parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+        await query.answer()
+        await query.message.edit_caption("<blockquote><b>💳 MY CREDITS</b>\n\nCredits and plans are managed by the owner.\n\nContact @day1Nomore for details.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 HOME", callback_data="home")]]), parse_mode="html")
     elif data == "refer":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption="<blockquote><b>🎁 REFER & EARN</b>\n\nReferral rewards can be configured by the owner.</blockquote>", parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+        await query.answer()
+        await query.message.edit_caption("<blockquote><b>🎁 REFER & EARN</b>\n\nInvite users to WASTE X UBOT and ask the owner about the current referral rewards.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 HOME", callback_data="home")]]), parse_mode="html")
     elif data == "plans":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption="<blockquote><b>💎 PLANS & PRICING</b>\n\nContact the owner for current plans and pricing.</blockquote>", parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+        await query.answer()
+        await query.message.edit_caption("<blockquote><b>💎 PLANS & PRICING</b>\n\nPremium features such as advanced VC automation and promotion can be activated by the owner.\n\nContact @day1Nomore.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 HOME", callback_data="home")]]), parse_mode="html")
     elif data == "about":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "donate":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.DONATE), reply_markup=InlineKeyboardMarkup(Data.guide_buttons))
     elif data == "guide":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.GUIDE), reply_markup=InlineKeyboardMarkup(Data.back_buttons))
+
+# Music is intentionally handled by Waste.modules.basic.playvc on the connected ID.
+# The bot control account does not intercept group /play/.play commands, so the
+# connected account is the only player and the current group is always used.
+
 
 @app.on_message(filters.command("subscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def subscription_cmd(client: Client, message: Message):

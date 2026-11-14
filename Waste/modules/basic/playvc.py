@@ -15,18 +15,12 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
 def _download_song(query: str):
-    """Resolve and download one audio track for PyTgCalls.
-
-    YouTube sometimes requires authentication for audio extraction. The downloader
-    accepts either a local cookies.txt or YOUTUBE_COOKIES_FILE/YOUTUBE_COOKIES_B64.
-    """
-    import base64
-    import tempfile
+    """Resolve and download one audio track for PyTgCalls."""
     import yt_dlp
 
     job_id = uuid.uuid4().hex
     outtmpl = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
-    base_options = {
+    options = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "outtmpl": outtmpl,
         "noplaylist": True,
@@ -35,78 +29,45 @@ def _download_song(query: str):
         "default_search": "ytsearch1",
         "source_address": "0.0.0.0",
         "geo_bypass": True,
-        "retries": 5,
-        "fragment_retries": 5,
-        "socket_timeout": 30,
-        "concurrent_fragment_downloads": 3,
+        "retries": 3,
+        "fragment_retries": 3,
+        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
     }
+    if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
+        options["cookiefile"] = "cookies.txt"
 
-    cookie_path = ""
-    for candidate in ("cookies.txt", os.getenv("YOUTUBE_COOKIES_FILE", "")):
-        if candidate and os.path.exists(candidate) and os.path.getsize(candidate) > 0:
-            cookie_path = candidate
-            break
-
-    temp_cookie = None
-    if not cookie_path:
-        encoded = os.getenv("YOUTUBE_COOKIES_B64", "").strip()
-        if encoded:
-            try:
-                fd, temp_cookie = tempfile.mkstemp(prefix="ytcookies_", suffix=".txt")
-                with os.fdopen(fd, "wb") as fh:
-                    fh.write(base64.b64decode(encoded))
-                cookie_path = temp_cookie
-            except Exception:
-                temp_cookie = None
-    if cookie_path:
-        base_options["cookiefile"] = cookie_path
-
-    attempts = [
-        ["android_vr"],
-        ["ios"],
-        ["web_safari"],
-        ["web_embedded"],
-        ["tv_embedded"],
-    ]
-    last_exc = None
     try:
-        for player_client in attempts:
-            options = dict(base_options)
-            options["extractor_args"] = {"youtube": {"player_client": player_client}}
-            try:
-                with yt_dlp.YoutubeDL(options) as ydl:
-                    info = ydl.extract_info(query, download=True)
-                    if info and info.get("entries"):
-                        info = next((entry for entry in info["entries"] if entry), None)
-                    if not info:
-                        raise RuntimeError("No YouTube result found")
-                    requested = ydl.prepare_filename(info)
-                path = requested
-                if not os.path.exists(path):
-                    base = os.path.splitext(requested)[0]
-                    matches = [
-                        os.path.join(DOWNLOAD_DIR, name)
-                        for name in os.listdir(DOWNLOAD_DIR)
-                        if name.startswith(os.path.basename(base) + ".")
-                    ]
-                    if matches:
-                        path = matches[0]
-                if os.path.exists(path):
-                    return path, info
-                last_exc = FileNotFoundError("Downloaded audio file not found")
-            except Exception as exc:
-                last_exc = exc
-                continue
-    finally:
-        if temp_cookie:
-            try:
-                os.remove(temp_cookie)
-            except OSError:
-                pass
-
-    if last_exc and "Sign in to confirm" in str(last_exc):
-        raise RuntimeError("YouTube requires authentication for this video. Add a valid cookies.txt file or set YOUTUBE_COOKIES_FILE/YOUTUBE_COOKIES_B64.") from last_exc
-    raise last_exc or RuntimeError("YouTube download failed")
+        with yt_dlp.YoutubeDL(options) as ydl:
+            info = ydl.extract_info(query, download=True)
+    except Exception as first_error:
+        # YouTube can reject one player client/format. Retry with a different
+        # client set before surfacing the failure to the user.
+        fallback = dict(options)
+        fallback["format"] = "bestaudio/best"
+        fallback["extractor_args"] = {"youtube": {"player_client": ["web_safari", "android"]}}
+        try:
+            with yt_dlp.YoutubeDL(fallback) as ydl:
+                info = ydl.extract_info(query, download=True)
+        except Exception:
+            raise first_error
+        if info and info.get("entries"):
+            info = info["entries"][0]
+        if not info:
+            raise RuntimeError("No result found")
+        requested = ydl.prepare_filename(info)
+        path = requested
+        if not os.path.exists(path):
+            base = os.path.splitext(requested)[0]
+            matches = [
+                os.path.join(DOWNLOAD_DIR, name)
+                for name in os.listdir(DOWNLOAD_DIR)
+                if name.startswith(os.path.basename(base) + ".")
+            ]
+            if matches:
+                path = matches[0]
+        if not os.path.exists(path):
+            raise FileNotFoundError("Downloaded audio file not found")
+        return path, info
 
 
 async def play_song_in_chat(client, chat_id: int, query: str):
@@ -118,7 +79,7 @@ async def play_song_in_chat(client, chat_id: int, query: str):
     return path, info
 
 
-@Client.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["play", "vplay", "song"], [".", "/"]) & filters.me)
 async def play_handler(client, message):
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply(
@@ -130,7 +91,7 @@ async def play_handler(client, message):
     query = parts[1].strip() if len(parts) > 1 else ""
     if not query:
         return await message.reply(
-            "<blockquote>🎵 Usage: <code>.play song name</code> or <code>/play song name</code></blockquote>",
+            "<blockquote>🎵 Usage: <code>.play song name</code>, <code>/play song name</code> or <code>/song song name</code></blockquote>",
             parse_mode="html",
         )
 
@@ -163,8 +124,7 @@ async def play_handler(client, message):
         log.exception("Music play failed")
         try:
             await status.edit(
-                f"<blockquote>❌ <b>Music failed</b>\n\n<code>{type(exc).__name__}</code>\n\n"
-                "If YouTube asks for sign-in, add a valid cookies.txt file to the project and try again.</blockquote>",
+                f"<blockquote>❌ <b>Music failed</b>\n\n<code>{type(exc).__name__}</code></blockquote>",
                 parse_mode="html",
             )
         except Exception:
@@ -182,6 +142,7 @@ add_command_help(
     "Music",
     [
         ["play", "Connected ID only: `.play song name` or `/play song name` searches and plays the song in the current group Voice Chat."],
+        ["song", "Connected ID only: `.song song name` or `/song song name` searches and plays in this group's Voice Chat."],
         ["vplay", "Connected ID only: play audio in the connected account's actual group Voice Chat."],
     ],
 )

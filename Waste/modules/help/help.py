@@ -51,48 +51,25 @@ FORCE_CHANNELS = [
 ]
 
 
-FORCE_MODULE_ORDER = [
-    "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall",
-    "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam",
-    "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify",
-    "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid",
-    "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker",
-    "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare",
-    "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat",
-    "Music", "VcFight", "AutoTextPromo",
-]
-
-
-def _all_force_modules():
-    keys = list(dict.fromkeys(FORCE_MODULE_ORDER + list(CMD_HELP.keys())))
-    return sorted(keys, key=str.lower)
-
-
-def _force_page_keyboard(page=0, per_page=24):
-    keys = _all_force_modules()
-    pages = max(1, (len(keys) + per_page - 1) // per_page)
-    page = max(0, min(page, pages - 1))
-    chunk = keys[page * per_page:(page + 1) * per_page]
-    rows = []
-    for i in range(0, len(chunk), 2):
-        row = [InlineKeyboardButton(f"⭐ {chunk[i]}", callback_data=f"force_mod:{chunk[i]}")]
-        if i + 1 < len(chunk):
-            row.append(InlineKeyboardButton(f"⭐ {chunk[i+1]}", callback_data=f"force_mod:{chunk[i+1]}"))
+def _force_keyboard():
+    rows = [
+        [InlineKeyboardButton("🎵 MUSIC / SONG", callback_data="force_mod:Music"), InlineKeyboardButton("⚔️ VCFIGHT", callback_data="force_mod:VcFight")],
+        [InlineKeyboardButton("🎙️ RECORDINGS", callback_data="force_recordings"), InlineKeyboardButton("📢 AUTOTEXTPROMO", callback_data="force_mod:AutoTextPromo")],
+    ]
+    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat"]
+    explicit_norm = {str(x).strip().lower().replace("_", "-") for x in explicit}
+    extra = [k for k in CMD_HELP.keys() if str(k).strip().lower().replace("_", "-") not in explicit_norm]
+    keys = list(dict.fromkeys(explicit + extra))
+    keys = [k for k in keys if str(k).strip().lower() not in {"music", "vcfight", "autotextpromo", "promotion", "ai chat"}]
+    keys = sorted(keys, key=str.lower)
+    for i in range(0, len(keys), 2):
+        row = [InlineKeyboardButton(f"📌 {keys[i]}", callback_data=f"force_mod:{keys[i]}")]
+        if i + 1 < len(keys):
+            row.append(InlineKeyboardButton(f"📌 {keys[i+1]}", callback_data=f"force_mod:{keys[i+1]}"))
         rows.append(row)
-    nav = []
-    if page > 0:
-        nav.append(InlineKeyboardButton("◀️ BACK", callback_data=f"force_page:{page-1}"))
-    nav.append(InlineKeyboardButton(f"{page+1} / {pages}", callback_data="force_noop"))
-    if page < pages - 1:
-        nav.append(InlineKeyboardButton("NEXT ▶️", callback_data=f"force_page:{page+1}"))
-    rows.append(nav)
-    rows.append([InlineKeyboardButton("🎙️ RECORDINGS", callback_data="force_recordings")])
     rows.append([InlineKeyboardButton("🔙 HELP MENU", callback_data="force_help")])
     return InlineKeyboardMarkup(rows)
 
-
-def _force_keyboard():
-    return _force_page_keyboard(0)
 
 def _recordings_keyboard():
     return InlineKeyboardMarkup([
@@ -154,53 +131,120 @@ def _group_help_keyboard():
     return InlineKeyboardMarkup(rows)
 
 
+def _normalise_help_name(value: str) -> str:
+    return " ".join((value or "").strip().lower().replace("_", "-").split())
+
+
 def _find_help_key(name: str):
-    name = (name or "").strip().lower()
-    aliases = {"music": "Music", "song": "Music", "play": "Music", "autotextpromo": "AutoTextPromo", "autotext": "AutoTextPromo", "vcfight": "VcFight", "recordings": "VcFight", "record": "VcFight"}
-    if name in aliases:
-        return aliases[name]
+    """Resolve a displayed module name, alias, or command name to CMD_HELP.
+
+    Resolution is case-insensitive and also matches keys such as ``AI Chat``
+    when the user types ``aichat``. This prevents false ``Not a Valid Module``
+    errors for modules whose registered help name contains spaces/capitalisation.
+    """
+    raw = (name or "").strip()
+    norm = _normalise_help_name(raw)
+    compact = norm.replace(" ", "").replace("-", "")
+
+    aliases = {
+        "music": "Music", "song": "Music", "play": "Music",
+        "vcfight": "VcFight", "vc-fight": "VcFight", "recordings": "VcFight", "recording": "VcFight",
+        "autotextpromo": "Promotion", "autotext-promo": "Promotion", "autotext": "Promotion",
+        "aichat": "AI Chat", "ai-chat": "AI Chat", "ai chat": "AI Chat",
+        "promotion": "Promotion", "welcome": "Welcome",
+        "anime-cf": "anime_cf", "truthdare": "truth-dare",
+        "quotly": "quotly", "dictionary": "dictionary",
+    }
+    target = aliases.get(norm, raw)
+    target_norm = _normalise_help_name(target)
+    target_compact = target_norm.replace(" ", "").replace("-", "")
+
+    # Exact/canonical match first.
     for key in CMD_HELP:
-        if key.lower() == name:
+        k_norm = _normalise_help_name(str(key))
+        k_compact = k_norm.replace(" ", "").replace("-", "")
+        if k_norm == target_norm or k_compact == target_compact or k_norm == norm or k_compact == compact:
             return key
-    return None
+
+    # Display-only modules which don't have their own CMD_HELP registration.
+    display_aliases = {
+        "autotextpromo": "Promotion",
+        "music": "Music",
+        "vcfight": "VcFight",
+    }
+    return display_aliases.get(norm)
 
 
 def _module_text(key):
-    commands = CMD_HELP.get(key, {})
-    if isinstance(commands, list):
-        commands = {item[0]: item[1] for item in commands if item}
+    """Build a real command-details page from the registered CMD_HELP data."""
+    resolved = _find_help_key(str(key)) or key
+    commands = CMD_HELP.get(resolved, {})
+
+    # Case-insensitive fallback in case the module was registered under a
+    # slightly different spelling/capitalisation.
     if not commands:
-        if key == "AutoTextPromo":
-            commands = {"autotextpromo": "Use `.autotextpromo on` / `.autotextpromo off` to control AutoTextPromo."}
-        elif key == "VcFight":
-            commands = {
-                "join": "Join one active VC with `.join <group_id>`.",
-                "allvc": "Premium VC mode: `.allvc join` / `.allvc leave`.",
-                "fight": "Reply to audio/voice with `.fight` to repeat it in the selected VC.",
-                "fightstop": "Stop the current fight audio.",
-                "vcleave": "Leave the selected VC.",
-                "vcstatus": "Show VC connection and fight status.",
-                "vcchat": "Set or disable a separate VC automation chat.",
-                "recordings": "Open the recordings tools.",
-                "addrc": "Save an audio/voice recording.",
+        wanted = _normalise_help_name(str(resolved))
+        for registered_key, registered_commands in CMD_HELP.items():
+            if _normalise_help_name(str(registered_key)) == wanted:
+                commands = registered_commands
+                resolved = registered_key
+                break
+
+    # These are display-only entries in the requested Force Commands menu.
+    # They still receive useful usage instructions instead of an invalid-module
+    # response.
+    if not commands:
+        display_commands = {
+            "autotextpromo": {
+                "autotextpromo on": "Enable AutoTextPromo.",
+                "autotextpromo off": "Disable AutoTextPromo.",
+                "autotextpromo status": "Show AutoTextPromo status/settings.",
+            },
+            "music": {
+                "play <song name>": "Connected ID only: search and play the song in the current group's Voice Chat.",
+                "song <song name>": "Connected ID only: search and play the song in the current group's Voice Chat.",
+                "vplay <song name>": "Connected ID only: play audio in the current group's Voice Chat.",
+            },
+            "vcfight": {
+                "vcfight": "Start VC Fight.",
+                "vcstop": "Stop VC Fight.",
+                "vcjoin": "Join the current Voice Chat.",
+                "vcleave": "Leave the current Voice Chat.",
+                "vcall": "Call members in the VC workflow.",
+                "vcmute": "Mute in VC.",
+                "vcunmute": "Unmute in VC.",
+                "vclogs": "View VC logs.",
+                "addrc": "Save a replied audio/voice recording.",
                 "removerc": "Remove a saved recording.",
-                "myrc": "List and play saved recordings.",
+                "myrc": "List saved recordings.",
                 "rcinfo": "Show saved recording information.",
-                "bass": "Apply the supported bass control to recording playback.",
-            }
-        elif key == "Music":
-            commands = {
-                "play": "Connected ID only: `.play song name` or `/play song name` plays the song in the current group VC.",
-                "vplay": "Connected ID only: play audio in the connected account's group VC.",
-            }
-        else:
-            return f"<blockquote><b>❌ {key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
-    lines = [f"<blockquote><b>❖ {key.upper()} COMMANDS</b></blockquote>"]
+                "bass 100-500": "Boost the latest saved recording using a value from 100 to 500.",
+            },
+        }
+        commands = display_commands.get(_normalise_help_name(str(key)), {})
+
+    if not commands:
+        commands = {str(key): "Commands and settings for this module. Use the command shown above with your connected ID."}
+
+    title = str(resolved or key).upper()
+    lines = [f"<blockquote><b>❖ {title} COMMANDS</b></blockquote>"]
     for command, desc in commands.items():
-        desc = str(desc).replace("<", "&lt;").replace(">", "&gt;")
-        # Keep command syntax readable even when a module description contains markdown.
-        desc = desc.replace("&lt;code&gt;", "<code>").replace("&lt;/code&gt;", "</code>")
-        lines.append(f"<blockquote>• <code>.{command}</code>  |  <code>/{command}</code>\n  {desc}</blockquote>")
+        command = str(command).strip()
+        # Registered help entries are already the real command syntax. Add
+        # both prefixes only for plain command names; don't duplicate them
+        # when an entry already contains arguments or a prefix.
+        if command.startswith((".", "/")):
+            usage = command
+        else:
+            usage = f".{command}"
+        alt = usage[1:] if usage.startswith(".") else usage
+        if not alt.startswith("/"):
+            alt = f"/{alt}"
+        lines.append(
+            f"<blockquote>• <code>{usage}</code>  |  <code>{alt}</code>\n"
+            f"  {str(desc)}</blockquote>"
+        )
+    lines.append("<blockquote>💡 Use the command exactly as shown. Arguments such as <code>&lt;group_id&gt;</code> or <code>&lt;text&gt;</code> are replaced with your value.</blockquote>")
     return "\n".join(lines)
 
 
@@ -251,7 +295,7 @@ async def group_help_callback(client, query):
     text = _module_text(key)
     await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ALL COMMANDS", callback_data="grouphelp:menu")]]), parse_mode="html")
 
-@Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|page:|noop$|mod:|record:)"))
+@Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|mod:|record:)"))
 async def force_callback(client, query):
     user_id = query.from_user.id
     if query.data == "force_check":
@@ -277,17 +321,6 @@ async def force_callback(client, query):
             await query.message.edit_caption(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
         except Exception:
             await query.message.edit_text(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
-        return
-    if query.data == "force_noop":
-        await query.answer()
-        return
-    if query.data.startswith("force_page:"):
-        await query.answer()
-        page = int(query.data.split(":", 1)[1])
-        try:
-            await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_page_keyboard(page), parse_mode="html")
-        except Exception:
-            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_page_keyboard(page), parse_mode="html")
         return
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]
