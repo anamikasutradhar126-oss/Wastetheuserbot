@@ -24,8 +24,8 @@ recordings_col = db["UserRecordings"]
 
 OWNER_USERNAME = "day1Nomore"
 SUPPORT_USERNAME = "wasteBotz"
-FORCE_SUPPORT = "wasteSupportt"
-FORCE_UPDATES = "jp_network"
+FORCE_SUPPORT = "wasteBotz"
+FORCE_UPDATES = "wasteuserbotUpdates"
 
 
 class Data:
@@ -123,27 +123,32 @@ async def _force_joined(client: Client, user_id: int) -> bool:
             if status in {"left", "kicked", "banned"}:
                 return False
         except Exception:
-            # Keep the bot usable when a channel is temporarily unavailable to the bot.
-            continue
+            # Force-join must fail closed: if membership cannot be verified,
+            # do not bypass the gate.
+            return False
     return True
 
 
 def _force_markup():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔴 JOIN SUPPORT", url=f"https://t.me/{FORCE_SUPPORT}")],
-        [InlineKeyboardButton("🔵 JOIN UPDATES", url=f"https://t.me/{FORCE_UPDATES}")],
-        [InlineKeyboardButton("✅ CHECK AGAIN", callback_data="start_force_check")],
+        [InlineKeyboardButton("🛡️  JOIN SUPPORT  ➜", url=f"https://t.me/{FORCE_SUPPORT}")],
+        [InlineKeyboardButton("📢  JOIN UPDATES  ➜", url=f"https://t.me/{FORCE_UPDATES}")],
+        [InlineKeyboardButton("💚  ✅ CHECK AGAIN  💚", callback_data="start_force_check")],
     ])
 
 
-FORCE_CAPTION = """<blockquote><b>⚠️ FORCE JOIN REQUIRED</b>
+FORCE_CAPTION = """<blockquote><b>👑 WASTE X UBOT — ACCESS REQUIRED 👑</b>
 
-To continue using <b>WASTE X UBOT</b>, you must join both channels below.
+🔐 <b>Welcome to WASTE X UBOT</b>
 
-🔴 Support: @wasteSupportt
-🔵 Updates: @jp_network
+To unlock the bot, join both official channels below.
 
-After joining both channels, tap <b>CHECK AGAIN</b>.</blockquote>"""
+🛡️ <b>Support</b> — @wasteBotz
+📢 <b>Updates</b> — @wasteuserbotUpdates
+
+✨ After joining both channels, press <b>CHECK AGAIN</b>.
+
+⚡ <i>Powerful • Fast • Secure</i></blockquote>"""
 
 
 async def _send_start_or_force(client: Client, message: Message):

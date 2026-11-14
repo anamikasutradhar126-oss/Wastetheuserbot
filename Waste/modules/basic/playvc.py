@@ -141,7 +141,7 @@ async def play_handler(client, message):
 add_command_help(
     "Music",
     [
-        ["play", "Search and play a song in the connected account's actual group Voice Chat."],
-        ["vplay", "Play audio in the connected account's actual group Voice Chat."],
+        ["play", "Connected ID only: `.play song name` or `/play song name` searches and plays the song in the current group Voice Chat."],
+        ["vplay", "Connected ID only: play audio in the connected account's actual group Voice Chat."],
     ],
 )

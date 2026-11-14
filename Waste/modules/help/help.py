@@ -39,13 +39,15 @@ HELP_MENU = r"""<blockquote>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯＴ - ＨＥＬ�
 +-----------------------+------------------------+
 • @day1Nomore × @wasteBotz .</blockquote>"""
 
-FORCE_TEXT = """<blockquote><b>❖ ＷＡＳＴＥ Ｘ ＵＢＯＴ - FORCE COMMANDS ❖</b>
+FORCE_TEXT = """<blockquote><b>👑 ＷＡＳＴＥ Ｘ ＵＢＯＴ — FORCE COMMANDS 👑</b>
 
-Tap any section below to open its commands and usage.</blockquote>"""
+✨ Choose a command/module below to open its details.
+🔹 Music and VcFight use the existing registered command help.
+🔹 Use <code>.help &lt;command&gt;</code> from a connected ID for direct details.</blockquote>"""
 
 FORCE_CHANNELS = [
-    ("wasteSupportt", "🛡️ SUPPORT CHANNEL"),
-    ("jp_network", "📢 UPDATE CHANNEL"),
+    ("wasteBotz", "🛡️ SUPPORT CHANNEL"),
+    ("wasteuserbotUpdates", "📢 UPDATE CHANNEL"),
 ]
 
 
@@ -78,9 +80,9 @@ def _recordings_keyboard():
 
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔴 JOIN SUPPORT", url="https://t.me/wasteSupportt")],
-        [InlineKeyboardButton("🔵 JOIN UPDATES", url="https://t.me/jp_network")],
-        [InlineKeyboardButton("✅ CHECK AGAIN", callback_data="force_check")],
+        [InlineKeyboardButton("🛡️  JOIN SUPPORT  ➜", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("📢  JOIN UPDATES  ➜", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("💚  ✅ CHECK AGAIN  💚", callback_data="force_check")],
     ])
 
 
@@ -89,14 +91,14 @@ def _force_join_text():
 
 To continue using <b>WASTE X UBOT</b>, you must join both channels below.
 
-🔴 Support: @wasteSupportt
-🔵 Updates: @jp_network
+🛡️ Support: @wasteBotz
+📢 Updates: @wasteuserbotUpdates
 
 After joining both channels, tap <b>CHECK AGAIN</b>.</blockquote>"""
 
 
 async def _joined(client, user_id):
-    for chat in ("@wasteSupportt", "@jp_network"):
+    for chat in ("@wasteBotz", "@wasteuserbotUpdates"):
         try:
             member = await client.get_chat_member(chat, user_id)
             status = getattr(member, "status", None)
@@ -113,6 +115,18 @@ async def _send_force_join(client, message):
         await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
     except Exception:
         await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
+
+
+def _group_help_keyboard():
+    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "Music", "VcFight", "AutoTextPromo"]
+    keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys())))
+    rows = []
+    for i in range(0, len(keys), 2):
+        row = [InlineKeyboardButton(keys[i], callback_data=f"grouphelp:{keys[i]}")]
+        if i + 1 < len(keys):
+            row.append(InlineKeyboardButton(keys[i + 1], callback_data=f"grouphelp:{keys[i + 1]}"))
+        rows.append(row)
+    return InlineKeyboardMarkup(rows)
 
 
 def _find_help_key(name: str):
@@ -164,13 +178,27 @@ async def module_help(client: Client, message: Message):
                 return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
 
     if not help_arg:
-        return await message.reply_text(HELP_MENU, parse_mode=enums.ParseMode.HTML)
+        return await message.reply_text(
+            HELP_MENU,
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=_group_help_keyboard(),
+        )
 
     key = _find_help_key(help_arg)
     if key:
         return await message.reply_text(_module_text(key), parse_mode="html")
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
+
+@Client.on_callback_query(filters.regex(r"^grouphelp:"))
+async def group_help_callback(client, query):
+    await query.answer()
+    key = query.data.split(":", 1)[1]
+    if key == "menu":
+        await query.message.edit_text(HELP_MENU, reply_markup=_group_help_keyboard(), parse_mode=enums.ParseMode.HTML)
+        return
+    text = _module_text(key)
+    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ALL COMMANDS", callback_data="grouphelp:menu")]]), parse_mode="html")
 
 @Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|mod:|record:)"))
 async def force_callback(client, query):
@@ -194,7 +222,10 @@ async def force_callback(client, query):
         return
     if query.data == "force_menu":
         await query.answer()
-        await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_keyboard()) if getattr(query.message, "photo", None) else await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        try:
+            await query.message.edit_caption(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
+        except Exception:
+            await query.message.edit_text(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
         return
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]
