@@ -51,23 +51,48 @@ FORCE_CHANNELS = [
 ]
 
 
-def _force_keyboard():
-    rows = [
-        [InlineKeyboardButton("🎵 MUSIC / SONG", callback_data="force_mod:Music"), InlineKeyboardButton("⚔️ VCFIGHT", callback_data="force_mod:VcFight")],
-        [InlineKeyboardButton("🎙️ RECORDINGS", callback_data="force_recordings"), InlineKeyboardButton("📢 AUTOTEXTPROMO", callback_data="force_mod:AutoTextPromo")],
-    ]
-    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat"]
-    keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys())))
-    keys = [k for k in keys if k not in {"Music", "VcFight", "AutoTextPromo", "Promotion"}]
-    keys = sorted(keys, key=str.lower)
-    for i in range(0, len(keys), 2):
-        row = [InlineKeyboardButton(f"📌 {keys[i]}", callback_data=f"force_mod:{keys[i]}")]
-        if i + 1 < len(keys):
-            row.append(InlineKeyboardButton(f"📌 {keys[i+1]}", callback_data=f"force_mod:{keys[i+1]}"))
+FORCE_MODULE_ORDER = [
+    "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall",
+    "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam",
+    "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify",
+    "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid",
+    "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker",
+    "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare",
+    "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat",
+    "Music", "VcFight", "AutoTextPromo",
+]
+
+
+def _all_force_modules():
+    keys = list(dict.fromkeys(FORCE_MODULE_ORDER + list(CMD_HELP.keys())))
+    return sorted(keys, key=str.lower)
+
+
+def _force_page_keyboard(page=0, per_page=24):
+    keys = _all_force_modules()
+    pages = max(1, (len(keys) + per_page - 1) // per_page)
+    page = max(0, min(page, pages - 1))
+    chunk = keys[page * per_page:(page + 1) * per_page]
+    rows = []
+    for i in range(0, len(chunk), 2):
+        row = [InlineKeyboardButton(f"⭐ {chunk[i]}", callback_data=f"force_mod:{chunk[i]}")]
+        if i + 1 < len(chunk):
+            row.append(InlineKeyboardButton(f"⭐ {chunk[i+1]}", callback_data=f"force_mod:{chunk[i+1]}"))
         rows.append(row)
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton("◀️ BACK", callback_data=f"force_page:{page-1}"))
+    nav.append(InlineKeyboardButton(f"{page+1} / {pages}", callback_data="force_noop"))
+    if page < pages - 1:
+        nav.append(InlineKeyboardButton("NEXT ▶️", callback_data=f"force_page:{page+1}"))
+    rows.append(nav)
+    rows.append([InlineKeyboardButton("🎙️ RECORDINGS", callback_data="force_recordings")])
     rows.append([InlineKeyboardButton("🔙 HELP MENU", callback_data="force_help")])
     return InlineKeyboardMarkup(rows)
 
+
+def _force_keyboard():
+    return _force_page_keyboard(0)
 
 def _recordings_keyboard():
     return InlineKeyboardMarkup([
@@ -142,13 +167,39 @@ def _find_help_key(name: str):
 
 def _module_text(key):
     commands = CMD_HELP.get(key, {})
+    if isinstance(commands, list):
+        commands = {item[0]: item[1] for item in commands if item}
     if not commands:
         if key == "AutoTextPromo":
-            commands = {"autotextpromo": "Premium: `.autotextpromo on/off` — sends a different casual text every 30 minutes."}
+            commands = {"autotextpromo": "Use `.autotextpromo on` / `.autotextpromo off` to control AutoTextPromo."}
+        elif key == "VcFight":
+            commands = {
+                "join": "Join one active VC with `.join <group_id>`.",
+                "allvc": "Premium VC mode: `.allvc join` / `.allvc leave`.",
+                "fight": "Reply to audio/voice with `.fight` to repeat it in the selected VC.",
+                "fightstop": "Stop the current fight audio.",
+                "vcleave": "Leave the selected VC.",
+                "vcstatus": "Show VC connection and fight status.",
+                "vcchat": "Set or disable a separate VC automation chat.",
+                "recordings": "Open the recordings tools.",
+                "addrc": "Save an audio/voice recording.",
+                "removerc": "Remove a saved recording.",
+                "myrc": "List and play saved recordings.",
+                "rcinfo": "Show saved recording information.",
+                "bass": "Apply the supported bass control to recording playback.",
+            }
+        elif key == "Music":
+            commands = {
+                "play": "Connected ID only: `.play song name` or `/play song name` plays the song in the current group VC.",
+                "vplay": "Connected ID only: play audio in the connected account's group VC.",
+            }
         else:
             return f"<blockquote><b>❌ {key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
-    lines = [f"<blockquote><b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
+    lines = [f"<blockquote><b>❖ {key.upper()} COMMANDS</b></blockquote>"]
     for command, desc in commands.items():
+        desc = str(desc).replace("<", "&lt;").replace(">", "&gt;")
+        # Keep command syntax readable even when a module description contains markdown.
+        desc = desc.replace("&lt;code&gt;", "<code>").replace("&lt;/code&gt;", "</code>")
         lines.append(f"<blockquote>• <code>.{command}</code>  |  <code>/{command}</code>\n  {desc}</blockquote>")
     return "\n".join(lines)
 
@@ -200,7 +251,7 @@ async def group_help_callback(client, query):
     text = _module_text(key)
     await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ALL COMMANDS", callback_data="grouphelp:menu")]]), parse_mode="html")
 
-@Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|mod:|record:)"))
+@Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|page:|noop$|mod:|record:)"))
 async def force_callback(client, query):
     user_id = query.from_user.id
     if query.data == "force_check":
@@ -226,6 +277,17 @@ async def force_callback(client, query):
             await query.message.edit_caption(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
         except Exception:
             await query.message.edit_text(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
+        return
+    if query.data == "force_noop":
+        await query.answer()
+        return
+    if query.data.startswith("force_page:"):
+        await query.answer()
+        page = int(query.data.split(":", 1)[1])
+        try:
+            await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_page_keyboard(page), parse_mode="html")
+        except Exception:
+            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_page_keyboard(page), parse_mode="html")
         return
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]

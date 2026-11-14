@@ -35,11 +35,12 @@ class Data:
     back_buttons = [donate_button, [InlineKeyboardButton("🏠 ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ 🏠", callback_data="home")]]
     guide_buttons = [[InlineKeyboardButton("🏠 ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ 🏠", callback_data="home")]]
     buttons = [
-        generate_single_button,
-        [InlineKeyboardButton("🕸️ ᴡᴀsᴛᴇ", url=f"https://t.me/{OWNER_USERNAME}")],
-        [InlineKeyboardButton("📚 ʜᴇʟᴘ", callback_data="force_menu"), InlineKeyboardButton("ᴀʙᴏᴜᴛ 🎶", callback_data="about")],
-        [InlineKeyboardButton("⚡ ᴜᴘᴅᴀᴛᴇ's", url=f"https://t.me/{SUPPORT_USERNAME}"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ ⛈️", url=f"https://t.me/{SUPPORT_USERNAME}")],
-        [InlineKeyboardButton("🌿 ʙᴏᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ 🌿", url=f"https://t.me/{OWNER_USERNAME}")],
+        [InlineKeyboardButton("🔗 ᴄᴏɴɴᴇᴄᴛ ɪᴅ", callback_data="connect_id")],
+        [InlineKeyboardButton("📋 ᴍʏ ᴀᴄᴄᴏᴜɴᴛs", callback_data="manage_ids"), InlineKeyboardButton("💳 ᴍʏ ᴄʀᴇᴅɪᴛs", callback_data="credits")],
+        [InlineKeyboardButton("🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ", callback_data="refer"), InlineKeyboardButton("💎 ᴘʟᴀɴs & ᴘʀɪᴄɪɴɢ", callback_data="plans")],
+        [InlineKeyboardButton("❓ ʜᴇʟᴘ", callback_data="force_menu"), InlineKeyboardButton("👤 ᴏᴡɴᴇʀ ↗", url=f"https://t.me/{OWNER_USERNAME}")],
+        [InlineKeyboardButton("▶️ ʜᴏᴡ ᴛᴏ ᴜsᴇ ʙᴏᴛ ↗", callback_data="guide")],
+        [InlineKeyboardButton("🛠️ ᴍᴀɴᴀɢᴇ ᴍʏ ɪᴅs", callback_data="manage_ids")],
     ]
     START = """**┌────── ˹ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ˼ ⏤͟͟͞͞‌‌‌‌★**
 **┆◍ ʜᴇʏ, ɪ ᴀᴍ : [ᴡᴀsᴛᴇ ꭙ 𝐔sᴇʀвσᴛ](https://t.me/Wasteuserrbot)**
@@ -116,15 +117,23 @@ def _sub_active(uid):
 
 
 async def _force_joined(client: Client, user_id: int) -> bool:
+    # The bot must be able to inspect membership in both channels.  When a
+    # channel is reachable but the user is not a member, return False.
+    # For transient Telegram errors, retry once before showing the join gate.
     for channel in (f"@{FORCE_SUPPORT}", f"@{FORCE_UPDATES}"):
-        try:
-            member = await client.get_chat_member(channel, user_id)
-            status = getattr(member.status, "value", member.status)
-            if status in {"left", "kicked", "banned"}:
-                return False
-        except Exception:
-            # Force-join must fail closed: if membership cannot be verified,
-            # do not bypass the gate.
+        last_error = None
+        for _ in range(2):
+            try:
+                member = await client.get_chat_member(channel, user_id)
+                status = getattr(member.status, "value", member.status)
+                if status in {"left", "kicked", "banned"}:
+                    return False
+                break
+            except Exception as exc:
+                last_error = exc
+                await asyncio.sleep(0.25)
+        else:
+            log.error("Force-join verification failed for %s: %s", channel, last_error)
             return False
     return True
 
@@ -264,13 +273,13 @@ def _bot_force_keyboard():
 async def help_command(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-    arg = " ".join(message.command[1:]).strip().lower() if len(message.command) > 1 else ""
+    from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _module_text, _find_help_key
+    arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     if arg:
-        aliases = {"song": "music", "play": "music", "vcfight": "vcfight", "autotext": "autotextpromo"}
-        key = aliases.get(arg, arg)
-        if key in BOT_FORCE_COMMANDS:
-            return await message.reply_photo(ALIVE_PIC, caption=BOT_FORCE_COMMANDS[key], reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode="html")
-    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="html")
+        key = _find_help_key(arg)
+        if key:
+            return await message.reply_photo(ALIVE_PIC, caption=_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
+    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
 
 @app.on_callback_query(filters.regex(r"^botforce:"))
 async def bot_force_callback(client: Client, query: CallbackQuery):
@@ -306,6 +315,34 @@ async def callback_handler(client: Client, query: CallbackQuery):
             await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode="html"), reply_markup=_force_keyboard())
         except Exception:
             await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+    elif data == "connect_id":
+        connect_text = """<blockquote><b>🔗 CONNECT YOUR ID</b>
+
+Send <code>/add</code> to connect your Telegram account.
+
+You will receive an OTP and, if enabled, your 2FA password. After login, your connected ID is hosted automatically.
+
+🎵 Music and VC features run through the connected ID.</blockquote>"""
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=connect_text, parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 CONNECT ID", callback_data="connect_start")], [InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+    elif data == "connect_start":
+        await query.answer("Send /add in this chat to connect your ID.", show_alert=True)
+    elif data == "manage_ids":
+        uid = query.from_user.id
+        doc = _session_doc(uid)
+        if doc:
+            name = doc.get("name") or "Connected account"
+            username = doc.get("username")
+            account = f"{name} (@{username})" if username else name
+            text = f"<blockquote><b>🛠️ MANAGE MY IDS</b>\n\n✅ Connected: <b>{account}</b>\n\nUse <code>/remove</code> to disconnect this ID.\nUse <code>/add</code> after removal to connect another ID.</blockquote>"
+        else:
+            text = "<blockquote><b>🛠️ MANAGE MY IDS</b>\n\n❌ No connected ID found.\n\nUse <code>/add</code> to connect your Telegram account.</blockquote>"
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=text, parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+    elif data == "credits":
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption="<blockquote><b>💳 MY CREDITS</b>\n\nCredits are managed by the bot owner/subscription system.</blockquote>", parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+    elif data == "refer":
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption="<blockquote><b>🎁 REFER & EARN</b>\n\nReferral rewards can be configured by the owner.</blockquote>", parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
+    elif data == "plans":
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption="<blockquote><b>💎 PLANS & PRICING</b>\n\nContact the owner for current plans and pricing.</blockquote>", parse_mode="html"), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 BACK", callback_data="home")]]))
     elif data == "about":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "donate":

@@ -15,7 +15,13 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
 def _download_song(query: str):
-    """Resolve and download one audio track for PyTgCalls."""
+    """Resolve and download one audio track for PyTgCalls.
+
+    YouTube sometimes requires authentication for audio extraction. The downloader
+    accepts either a local cookies.txt or YOUTUBE_COOKIES_FILE/YOUTUBE_COOKIES_B64.
+    """
+    import base64
+    import tempfile
     import yt_dlp
 
     job_id = uuid.uuid4().hex
@@ -29,51 +35,78 @@ def _download_song(query: str):
         "default_search": "ytsearch1",
         "source_address": "0.0.0.0",
         "geo_bypass": True,
-        "retries": 3,
-        "fragment_retries": 3,
+        "retries": 5,
+        "fragment_retries": 5,
+        "socket_timeout": 30,
+        "concurrent_fragment_downloads": 3,
     }
-    cookie_candidates = ["cookies.txt", os.getenv("YOUTUBE_COOKIES_FILE", "")]
-    for cookie_path in cookie_candidates:
-        if cookie_path and os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
-            base_options["cookiefile"] = cookie_path
+
+    cookie_path = ""
+    for candidate in ("cookies.txt", os.getenv("YOUTUBE_COOKIES_FILE", "")):
+        if candidate and os.path.exists(candidate) and os.path.getsize(candidate) > 0:
+            cookie_path = candidate
             break
 
+    temp_cookie = None
+    if not cookie_path:
+        encoded = os.getenv("YOUTUBE_COOKIES_B64", "").strip()
+        if encoded:
+            try:
+                fd, temp_cookie = tempfile.mkstemp(prefix="ytcookies_", suffix=".txt")
+                with os.fdopen(fd, "wb") as fh:
+                    fh.write(base64.b64decode(encoded))
+                cookie_path = temp_cookie
+            except Exception:
+                temp_cookie = None
+    if cookie_path:
+        base_options["cookiefile"] = cookie_path
+
     attempts = [
-        ["android_vr", "ios", "mweb", "web_safari"],
-        ["tv_embedded", "web_embedded", "ios"],
+        ["android_vr"],
+        ["ios"],
+        ["web_safari"],
+        ["web_embedded"],
+        ["tv_embedded"],
     ]
-    last_error = None
+    last_exc = None
+    try:
+        for player_client in attempts:
+            options = dict(base_options)
+            options["extractor_args"] = {"youtube": {"player_client": player_client}}
+            try:
+                with yt_dlp.YoutubeDL(options) as ydl:
+                    info = ydl.extract_info(query, download=True)
+                    if info and info.get("entries"):
+                        info = next((entry for entry in info["entries"] if entry), None)
+                    if not info:
+                        raise RuntimeError("No YouTube result found")
+                    requested = ydl.prepare_filename(info)
+                path = requested
+                if not os.path.exists(path):
+                    base = os.path.splitext(requested)[0]
+                    matches = [
+                        os.path.join(DOWNLOAD_DIR, name)
+                        for name in os.listdir(DOWNLOAD_DIR)
+                        if name.startswith(os.path.basename(base) + ".")
+                    ]
+                    if matches:
+                        path = matches[0]
+                if os.path.exists(path):
+                    return path, info
+                last_exc = FileNotFoundError("Downloaded audio file not found")
+            except Exception as exc:
+                last_exc = exc
+                continue
+    finally:
+        if temp_cookie:
+            try:
+                os.remove(temp_cookie)
+            except OSError:
+                pass
 
-    for clients in attempts:
-        options = dict(base_options)
-        options["extractor_args"] = {"youtube": {"player_client": clients}}
-        try:
-            with yt_dlp.YoutubeDL(options) as ydl:
-                info = ydl.extract_info(query, download=True)
-                if info and info.get("entries"):
-                    info = next((entry for entry in info["entries"] if entry), None)
-                if not info:
-                    raise RuntimeError("No YouTube result found")
-                requested = ydl.prepare_filename(info)
-        except Exception as exc:
-            last_error = exc
-            continue
-
-        path = requested
-        if not os.path.exists(path):
-            base = os.path.splitext(requested)[0]
-            matches = [
-                os.path.join(DOWNLOAD_DIR, name)
-                for name in os.listdir(DOWNLOAD_DIR)
-                if name.startswith(os.path.basename(base) + ".")
-            ]
-            if matches:
-                path = matches[0]
-        if os.path.exists(path):
-            return path, info
-        last_error = FileNotFoundError("Downloaded audio file not found")
-
-    raise last_error or RuntimeError("YouTube download failed")
+    if last_exc and "Sign in to confirm" in str(last_exc):
+        raise RuntimeError("YouTube requires authentication for this video. Add a valid cookies.txt file or set YOUTUBE_COOKIES_FILE/YOUTUBE_COOKIES_B64.") from last_exc
+    raise last_exc or RuntimeError("YouTube download failed")
 
 
 async def play_song_in_chat(client, chat_id: int, query: str):
