@@ -112,9 +112,9 @@ async def _joined(client, user_id):
 
 async def _send_force_join(client, message):
     try:
-        await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
+        await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
     except Exception:
-        await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
+        await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
 def _group_help_keyboard():
@@ -169,24 +169,69 @@ MODULE_FALLBACKS = {
     ],
 }
 
+# Every command displayed in the Force Commands menu gets a usable help page,
+# even when its legacy module has no CMD_HELP registration.
+_GENERIC_COMMANDS = [
+    "autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll",
+    "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct",
+    "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite",
+    "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping",
+    "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata",
+    "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag",
+    "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update",
+    "upload", "vctools", "vulgar", "waifu", "weather",
+]
+for _cmd in _GENERIC_COMMANDS:
+    _key = _cmd
+    MODULE_FALLBACKS.setdefault(_key, [
+        (_cmd, f"Use <code>.{_cmd}</code> or <code>/{_cmd}</code>. This command is available from the connected userbot.")
+    ])
+
 def _find_help_key(name: str):
-    name = (name or "").strip().lower()
+    """Resolve a module name, command name, or common alias reliably."""
+    name = (name or "").strip().lower().lstrip("./")
+    if not name:
+        return None
     if name in MODULE_ALIASES:
         return MODULE_ALIASES[name]
+    # Exact module-name match, case-insensitive.
     for key in CMD_HELP:
-        if key.lower() == name:
+        if str(key).strip().lower() == name:
             return key
-    # Also allow a command itself, e.g. `.help raid` or `.help aichat`.
+    # Match a registered command (including commands with arguments).
     for key, commands in CMD_HELP.items():
-        if isinstance(commands, dict):
-            iterable = commands.keys()
-        else:
-            iterable = [x[0] for x in commands if x]
+        iterable = commands.keys() if isinstance(commands, dict) else [x[0] for x in commands if x]
         for command in iterable:
-            first = str(command).lstrip("./").split()[0].lower()
+            first = str(command).strip().lstrip("./").split()[0].lower()
             if first == name:
                 return key
-    return None
+    # Finally, resolve every module shown in the force menu even if that
+    # module did not register CMD_HELP yet. This prevents `.help <command>`
+    # from falling through to the old "Not a Valid Module Name" response.
+    explicit = {
+        "autopic":"Autopic", "admin":"admin", "afk":"afk",
+        "animation":"animation", "anime_cf":"anime_cf", "antipm":"antipm",
+        "autoscroll":"autoscroll", "banall":"banall", "birthday":"birthday",
+        "broadcast":"broadcast", "carbon":"carbon", "clone":"clone",
+        "create":"create", "destruct":"destruct", "dictionary":"dictionary",
+        "dmspam":"dmspam", "emoji":"emoji", "flirt":"flirt", "globals":"globals",
+        "google":"google", "info":"info", "invite":"invite", "joinleave":"joinleave",
+        "locks":"locks", "memify":"memify", "mention":"mention", "metrics":"metrics",
+        "paste":"paste", "pats":"pats", "ping":"ping", "profile":"profile",
+        "purge":"purge", "quotly":"quotly", "raid":"raid", "replyraid":"replyraid",
+        "restart":"restart", "sangmata":"sangmata", "screenshot":"screenshot",
+        "spam":"spam", "start":"start", "stats":"stats", "sticker":"sticker",
+        "stickers":"stickers", "sudos":"sudos", "tag":"tag", "tagalert":"tagalert",
+        "tagall":"tagall", "text":"text", "tiny":"tiny", "translate":"translate",
+        "truth-dare":"truth-dare", "update":"update", "upload":"upload",
+        "vctools":"vctools", "vulgar":"vulgar", "waifu":"waifu", "weather":"weather",
+        "promotion":"Promotion", "aichat":"AI Chat", "vctalk":"VcTalk",
+        "autoreact":"Promotion", "mmar":"ReactionPlus", "omar":"ReactionPlus",
+        "music":"Music", "song":"Music", "play":"Music", "vcfight":"VcFight",
+        "recordings":"VcFight", "record":"VcFight", "autotextpromo":"AutoTextPromo",
+        "autotext":"AutoTextPromo", "welcome":"Welcome",
+    }
+    return explicit.get(name)
 
 
 def _module_text(key):
@@ -217,9 +262,9 @@ async def force_command(client, message):
     if not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
         return await _send_force_join(client, message)
     try:
-        return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
     except Exception:
-        return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
 @Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
@@ -232,9 +277,9 @@ async def module_help(client: Client, message: Message):
             return await _send_force_join(client, message)
         if not help_arg:
             try:
-                return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+                return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
             except Exception:
-                return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+                return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
 
     if not help_arg:
         return await message.reply_text(
@@ -245,7 +290,7 @@ async def module_help(client: Client, message: Message):
 
     key = _find_help_key(help_arg)
     if key:
-        return await message.reply_text(_module_text(key), parse_mode="html")
+        return await message.reply_text(_module_text(key), parse_mode=enums.ParseMode.HTML)
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
 
@@ -257,7 +302,7 @@ async def group_help_callback(client, query):
         await query.message.edit_text(HELP_MENU, reply_markup=_group_help_keyboard(), parse_mode=enums.ParseMode.HTML)
         return
     text = _module_text(key)
-    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ALL COMMANDS", callback_data="grouphelp:menu")]]), parse_mode="html")
+    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ALL COMMANDS", callback_data="grouphelp:menu")]]), parse_mode=enums.ParseMode.HTML)
 
 @Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|mod:|record:)"))
 async def force_callback(client, query):
@@ -270,26 +315,26 @@ async def force_callback(client, query):
         try:
             await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_keyboard())
         except Exception:
-            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_help":
         await query.answer()
         try:
-            await query.message.edit_caption(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
+            await query.message.edit_caption(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         except Exception:
-            await query.message.edit_text(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
+            await query.message.edit_text(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_menu":
         await query.answer()
         try:
-            await query.message.edit_caption(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
+            await query.message.edit_caption(HELP_MENU, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
         except Exception:
-            await query.message.edit_text(HELP_MENU, reply_markup=_force_keyboard(), parse_mode="html")
+            await query.message.edit_text(HELP_MENU, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
         return
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]
         await query.answer()
-        await query.message.edit_caption(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html") if getattr(query.message, "photo", None) else await query.message.edit_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
+        await query.message.edit_caption(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data.startswith("force_record:"):
         await query.answer()
@@ -302,7 +347,7 @@ async def force_callback(client, query):
                     if uid:
                         vf._pending_recording.add(int(uid))
                     text = "<blockquote><b>➕ ADDRC</b>\n\n🎙️ Send the next audio/voice message now. It will be saved automatically.</blockquote>"
-                    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode="html") if getattr(query.message, "photo", None) else await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode="html")
+                    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
                     return
                 fn = {"removerc": vf.remove_rc, "myrc": vf.my_rc, "rcinfo": vf.rc_info}[action]
                 await query.message.delete()
@@ -314,12 +359,12 @@ async def force_callback(client, query):
             "bass": "<blockquote><b>🔊 BASS</b>\n\nUse <code>.bass 100</code> through <code>.bass 500</code> to control the recording playback bass level.</blockquote>",
         }
         text = descriptions.get(action, "<blockquote>Use the corresponding recording command from the menu.</blockquote>")
-        await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode="html") if getattr(query.message, "photo", None) else await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode="html")
+        await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_recordings":
         await query.answer()
         text = "<blockquote><b>🎙️ VCFIGHT RECORDINGS</b>\n\nManage your saved recordings below.</blockquote>"
-        await query.message.edit_caption(text, reply_markup=_recordings_keyboard(), parse_mode="html") if getattr(query.message, "photo", None) else await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode="html")
+        await query.message.edit_caption(text, reply_markup=_recordings_keyboard(), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
 async def module_helper(client: Client, message: Message):
@@ -332,7 +377,7 @@ async def module_helper(client: Client, message: Message):
         return await module_help(client, message)
     key = _find_help_key(help_arg)
     if key:
-        return await message.reply_text(_module_text(key), parse_mode="html")
+        return await message.reply_text(_module_text(key), parse_mode=enums.ParseMode.HTML)
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
 

@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pytgcalls.types import GroupCallConfig
 
 from Waste.modules.basic.vcfight import _bridge, _states
@@ -75,12 +75,12 @@ async def play_song_in_chat(client, chat_id: int, query: str):
     return path, info
 
 
-@Client.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["play", "song", "vplay"], [".", "/"]) & filters.me)
 async def play_handler(client, message):
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply(
             "<blockquote>❌ Use <code>.play song name</code> inside a group.</blockquote>",
-            parse_mode="html",
+            parse_mode=enums.ParseMode.HTML,
         )
 
     parts = message.text.split(None, 1) if message.text else []
@@ -88,12 +88,12 @@ async def play_handler(client, message):
     if not query:
         return await message.reply(
             "<blockquote>🎵 Usage: <code>.play song name</code> or <code>/play song name</code></blockquote>",
-            parse_mode="html",
+            parse_mode=enums.ParseMode.HTML,
         )
 
     status = await message.reply(
         "<blockquote>🔎 <b>Searching...</b>\n\n🎵 <code>" + query.replace("<", "&lt;").replace(">", "&gt;") + "</code></blockquote>",
-        parse_mode="html",
+        parse_mode=enums.ParseMode.HTML,
     )
     path = None
     try:
@@ -107,7 +107,7 @@ async def play_handler(client, message):
             f"⏱️ {duration}\n"
             "🔊 <b>Playing in this group's Voice Chat</b>\n"
             "👤 <b>Connected ID</b></blockquote>",
-            parse_mode="html",
+            parse_mode=enums.ParseMode.HTML,
         )
 
         # Keep the downloaded file alive while PyTgCalls is consuming it.
@@ -121,7 +121,7 @@ async def play_handler(client, message):
         try:
             await status.edit(
                 f"<blockquote>❌ <b>Music failed</b>\n\n<code>{type(exc).__name__}</code></blockquote>",
-                parse_mode="html",
+                parse_mode=enums.ParseMode.HTML,
             )
         except Exception:
             pass

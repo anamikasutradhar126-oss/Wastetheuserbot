@@ -3,8 +3,8 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from pyrogram import Client, filters
-from pyrogram.errors import SessionPasswordNeeded
+from pyrogram import Client, filters, enums
+from pyrogram.errors import SessionPasswordNeeded, PhoneCodeExpired, PhoneCodeInvalid
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from pymongo import MongoClient
 
@@ -153,8 +153,8 @@ To unlock the bot, join both official channels below.
 
 async def _send_start_or_force(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-    await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons))
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
+    await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command("start", [".", "/"]) & filters.private)
@@ -168,12 +168,12 @@ async def force_handler(client: Client, message: Message):
     # force-join gate has been satisfied. If the user has not joined yet,
     # show the same join screen used by /start.
     if not await _force_joined(client, message.from_user.id):
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
     try:
         from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
     except Exception:
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="html")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
 BOT_FORCE_TEXT = """<blockquote><b>❖ ＷＡＳＴＥ Ｘ ＵＢＯＴ - FORCE COMMANDS ❖</b>
@@ -217,14 +217,14 @@ def _bot_force_keyboard():
 @app.on_message(filters.command("help", [".", "/"]) & filters.private)
 async def help_command(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
     from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _find_help_key, _module_text
     arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     if arg:
         key = _find_help_key(arg)
         if key:
-            return await message.reply_photo(ALIVE_PIC, caption=_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
-    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+            return await message.reply_photo(ALIVE_PIC, caption=_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
+    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 @app.on_callback_query(filters.regex(r"^botforce:"))
 async def bot_force_callback(client: Client, query: CallbackQuery):
@@ -232,10 +232,10 @@ async def bot_force_callback(client: Client, query: CallbackQuery):
     from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _module_text, _find_help_key
     key = query.data.split(":", 1)[1]
     if key == "menu":
-        return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode="html"), reply_markup=_force_keyboard())
+        return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=_force_keyboard())
     resolved = _find_help_key(key) or key
     text = _module_text(resolved)
-    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
+    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_callback_query(filters.regex(r"^start_force_check$"))
@@ -244,7 +244,7 @@ async def start_force_check(client: Client, query: CallbackQuery):
         await query.answer("Please join both channels first.", show_alert=True)
         return
     await query.answer("Joined successfully ✓")
-    await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START), reply_markup=InlineKeyboardMarkup(Data.buttons))
+    await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
@@ -255,19 +255,19 @@ async def callback_handler(client: Client, query: CallbackQuery):
     await query.answer()
     data = query.data
     if data == "home":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START), reply_markup=InlineKeyboardMarkup(Data.buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
     elif data in {"help", "force_menu"}:
         try:
             from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode="html"), reply_markup=_force_keyboard())
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=_force_keyboard())
         except Exception:
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "about":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "donate":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.DONATE), reply_markup=InlineKeyboardMarkup(Data.guide_buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.DONATE, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.guide_buttons))
     elif data == "guide":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.GUIDE), reply_markup=InlineKeyboardMarkup(Data.back_buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.GUIDE, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.back_buttons))
 
 @app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
 async def group_play_command(client: Client, message: Message):
@@ -410,6 +410,13 @@ async def add_session_command(client: Client, message: Message):
     uid = message.from_user.id
     if _session_doc(uid):
         return await message.reply("⚠️ ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.")
+    # A previous expired/failed login must never leave a stale wizard behind.
+    old = user_sessions.pop(uid, None)
+    if old and old.get("client"):
+        try:
+            await old["client"].disconnect()
+        except Exception:
+            pass
     await message.reply("📲 ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):")
     user_sessions[uid] = {"step": "awaiting_phone"}
 
@@ -457,6 +464,12 @@ async def session_handler(client: Client, msg: Message):
         except SessionPasswordNeeded:
             session["step"] = "awaiting_2fa"
             return await msg.reply("🔐 sᴇɴᴅ ʏᴏᴜʀ 2FA ᴘᴀssᴡᴏʀᴅ.")
+        except (PhoneCodeExpired, PhoneCodeInvalid) as e:
+            await msg.reply(f"❌ OTP login failed: `{e}`\nPlease use /add again and enter the newest OTP.")
+            try: await temp.disconnect()
+            except Exception: pass
+            user_sessions.pop(uid, None)
+            return
         except Exception as e:
             await msg.reply(f"❌ Login failed: `{e}`\nPlease use /add again.")
             try: await temp.disconnect()

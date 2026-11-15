@@ -117,6 +117,7 @@ async def _tts(text: str):
 
 
 async def _reply_pipeline(client, chat_id, pcm):
+    path = None
     try:
         text = await _transcribe(_pcm_to_wav(pcm))
         if not text or len(text.strip()) < 2:
@@ -140,6 +141,27 @@ async def _reply_pipeline(client, chat_id, pcm):
                 os.remove(path)
         except Exception:
             pass
+
+
+def _register_stream_callback(client, call):
+    """Register the stream-frame callback on the PyTgCalls instance.
+
+    py-tgcalls 2.x expects stream_frame filters to be passed to
+    PyTgCalls.on_update(), not to Pyrogram Client.on_message().
+    """
+    if getattr(call, "_waste_vctalk_registered", False):
+        return
+    if not _VC_API_OK:
+        return
+    try:
+        decorator = call.on_update(
+            call_filters.stream_frame(Direction.INCOMING, Device.MICROPHONE)
+        )
+        decorator(_incoming_audio)
+        setattr(call, "_waste_vctalk_registered", True)
+    except Exception as exc:
+        log.warning("Could not register VC Talk stream callback: %s", exc)
+        raise
 
 
 async def _start_recording(client, chat_id):
@@ -191,7 +213,6 @@ if _VC_API_OK:
             return await message.reply("🔴 **VC Talk OFF**")
         return await message.reply(f"🎙️ **VC Talk:** {'🟢 ON' if _enabled(client, chat_id) else '🔴 OFF'}")
 
-    @call_filters.stream_frame(Direction.INCOMING, Device.MICROPHONE)
     async def _incoming_audio(client, update: StreamFrames):
         # PyTgCalls dispatches stream updates to this callback.  Keep a small
         # rolling chunk so normal conversation can be transcribed without
