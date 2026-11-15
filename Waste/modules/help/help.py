@@ -47,7 +47,7 @@ FORCE_TEXT = """<blockquote><b>👑 ＷＡＳＴＥ Ｘ ＵＢＯＴ — FORCE C
 
 FORCE_CHANNELS = [
     ("wasteBotz", "🛡️ SUPPORT CHANNEL"),
-    ("wasteuserbotUpdates", "📢 UPDATE CHANNEL"),
+    ("day1Nomore", "📢 UPDATE CHANNEL"),
 ]
 
 
@@ -56,11 +56,9 @@ def _force_keyboard():
         [InlineKeyboardButton("🎵 MUSIC / SONG", callback_data="force_mod:Music"), InlineKeyboardButton("⚔️ VCFIGHT", callback_data="force_mod:VcFight")],
         [InlineKeyboardButton("🎙️ RECORDINGS", callback_data="force_recordings"), InlineKeyboardButton("📢 AUTOTEXTPROMO", callback_data="force_mod:AutoTextPromo")],
     ]
-    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat"]
-    explicit_norm = {str(x).strip().lower().replace("_", "-") for x in explicit}
-    extra = [k for k in CMD_HELP.keys() if str(k).strip().lower().replace("_", "-") not in explicit_norm]
-    keys = list(dict.fromkeys(explicit + extra))
-    keys = [k for k in keys if str(k).strip().lower() not in {"music", "vcfight", "autotextpromo", "promotion", "ai chat"}]
+    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "vctalk", "autoreact", "mmar", "omar"]
+    keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys()) + list(MODULE_ALIASES.values())))
+    keys = [k for k in keys if k not in {"Music", "VcFight", "AutoTextPromo", "Promotion"}]
     keys = sorted(keys, key=str.lower)
     for i in range(0, len(keys), 2):
         row = [InlineKeyboardButton(f"📌 {keys[i]}", callback_data=f"force_mod:{keys[i]}")]
@@ -83,7 +81,7 @@ def _recordings_keyboard():
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🛡️  JOIN SUPPORT  ➜", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("📢  JOIN UPDATES  ➜", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("📢  JOIN UPDATES  ➜", url="https://t.me/day1Nomore")],
         [InlineKeyboardButton("💚  ✅ CHECK AGAIN  💚", callback_data="force_check")],
     ])
 
@@ -94,13 +92,13 @@ def _force_join_text():
 To continue using <b>WASTE X UBOT</b>, you must join both channels below.
 
 🛡️ Support: @wasteBotz
-📢 Updates: @wasteuserbotUpdates
+📢 Updates: @day1Nomore
 
 After joining both channels, tap <b>CHECK AGAIN</b>.</blockquote>"""
 
 
 async def _joined(client, user_id):
-    for chat in ("@wasteBotz", "@wasteuserbotUpdates"):
+    for chat in ("@wasteBotz", "@day1Nomore"):
         try:
             member = await client.get_chat_member(chat, user_id)
             status = getattr(member, "status", None)
@@ -120,7 +118,7 @@ async def _send_force_join(client, message):
 
 
 def _group_help_keyboard():
-    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "Music", "VcFight", "AutoTextPromo"]
+    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "vctalk", "autoreact", "mmar", "omar", "Music", "VcFight", "AutoTextPromo"]
     keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys())))
     rows = []
     for i in range(0, len(keys), 2):
@@ -131,120 +129,86 @@ def _group_help_keyboard():
     return InlineKeyboardMarkup(rows)
 
 
-def _normalise_help_name(value: str) -> str:
-    return " ".join((value or "").strip().lower().replace("_", "-").split())
+MODULE_ALIASES = {
+    "music": "Music", "song": "Music", "play": "Music",
+    "autotextpromo": "AutoTextPromo", "autotext": "AutoTextPromo",
+    "vcfight": "VcFight", "vc fight": "VcFight", "recordings": "VcFight", "record": "VcFight",
+    "aichat": "AI Chat", "ai chat": "AI Chat",
+    "welcome": "Welcome", "promotion": "Promotion",
+    "autopic": "Autopic",
+    "vctalk": "VcTalk", "vc talk": "VcTalk",
+    "autoreact": "Promotion", "mmar": "ReactionPlus", "omar": "ReactionPlus",
+}
 
+# Modules that may not register a CMD_HELP block still get a useful usage page.
+MODULE_FALLBACKS = {
+    "AutoTextPromo": [
+        ("autotextpromo on", "Enable automatic promotional text."),
+        ("autotextpromo off", "Disable automatic promotional text."),
+    ],
+    "AI Chat": [
+        ("aichat on", "Enable AI replies."),
+        ("aichat off", "Disable AI replies."),
+        ("aichat status", "Show the current AI-chat status."),
+    ],
+    "Welcome": [
+        ("welcome on", "Enable automatic welcome messages."),
+        ("welcome off", "Disable automatic welcome messages."),
+    ],
+    "VcTalk": [
+        ("vctalk on", "Enable AI voice conversation in the current VC."),
+        ("vctalk off", "Disable AI voice conversation in the current VC."),
+        ("vctalk status", "Show VC Talk status."),
+    ],
+    "ReactionPlus": [
+        ("mmar on 😂😭😑🤣💔🖕🍌", "React to your own messages with the selected emoji pool."),
+        ("mmar off", "Disable reactions on your own messages."),
+        ("omar on @username", "Target a user and react to their messages."),
+        ("omar on 123456789", "Target a user by ID and react to their messages."),
+        ("omar off", "Disable target reactions."),
+    ],
+}
 
 def _find_help_key(name: str):
-    """Resolve a displayed module name, alias, or command name to CMD_HELP.
-
-    Resolution is case-insensitive and also matches keys such as ``AI Chat``
-    when the user types ``aichat``. This prevents false ``Not a Valid Module``
-    errors for modules whose registered help name contains spaces/capitalisation.
-    """
-    raw = (name or "").strip()
-    norm = _normalise_help_name(raw)
-    compact = norm.replace(" ", "").replace("-", "")
-
-    aliases = {
-        "music": "Music", "song": "Music", "play": "Music",
-        "vcfight": "VcFight", "vc-fight": "VcFight", "recordings": "VcFight", "recording": "VcFight",
-        "autotextpromo": "Promotion", "autotext-promo": "Promotion", "autotext": "Promotion",
-        "aichat": "AI Chat", "ai-chat": "AI Chat", "ai chat": "AI Chat",
-        "promotion": "Promotion", "welcome": "Welcome",
-        "anime-cf": "anime_cf", "truthdare": "truth-dare",
-        "quotly": "quotly", "dictionary": "dictionary",
-    }
-    target = aliases.get(norm, raw)
-    target_norm = _normalise_help_name(target)
-    target_compact = target_norm.replace(" ", "").replace("-", "")
-
-    # Exact/canonical match first.
+    name = (name or "").strip().lower()
+    if name in MODULE_ALIASES:
+        return MODULE_ALIASES[name]
     for key in CMD_HELP:
-        k_norm = _normalise_help_name(str(key))
-        k_compact = k_norm.replace(" ", "").replace("-", "")
-        if k_norm == target_norm or k_compact == target_compact or k_norm == norm or k_compact == compact:
+        if key.lower() == name:
             return key
-
-    # Display-only modules which don't have their own CMD_HELP registration.
-    display_aliases = {
-        "autotextpromo": "Promotion",
-        "music": "Music",
-        "vcfight": "VcFight",
-    }
-    return display_aliases.get(norm)
+    # Also allow a command itself, e.g. `.help raid` or `.help aichat`.
+    for key, commands in CMD_HELP.items():
+        if isinstance(commands, dict):
+            iterable = commands.keys()
+        else:
+            iterable = [x[0] for x in commands if x]
+        for command in iterable:
+            first = str(command).lstrip("./").split()[0].lower()
+            if first == name:
+                return key
+    return None
 
 
 def _module_text(key):
-    """Build a real command-details page from the registered CMD_HELP data."""
-    resolved = _find_help_key(str(key)) or key
-    commands = CMD_HELP.get(resolved, {})
-
-    # Case-insensitive fallback in case the module was registered under a
-    # slightly different spelling/capitalisation.
+    commands = CMD_HELP.get(key, {})
+    if commands and not isinstance(commands, dict):
+        try:
+            commands = dict(commands)
+        except Exception:
+            commands = {}
     if not commands:
-        wanted = _normalise_help_name(str(resolved))
-        for registered_key, registered_commands in CMD_HELP.items():
-            if _normalise_help_name(str(registered_key)) == wanted:
-                commands = registered_commands
-                resolved = registered_key
-                break
-
-    # These are display-only entries in the requested Force Commands menu.
-    # They still receive useful usage instructions instead of an invalid-module
-    # response.
+        commands = dict(MODULE_FALLBACKS.get(key, []))
     if not commands:
-        display_commands = {
-            "autotextpromo": {
-                "autotextpromo on": "Enable AutoTextPromo.",
-                "autotextpromo off": "Disable AutoTextPromo.",
-                "autotextpromo status": "Show AutoTextPromo status/settings.",
-            },
-            "music": {
-                "play <song name>": "Connected ID only: search and play the song in the current group's Voice Chat.",
-                "song <song name>": "Connected ID only: search and play the song in the current group's Voice Chat.",
-                "vplay <song name>": "Connected ID only: play audio in the current group's Voice Chat.",
-            },
-            "vcfight": {
-                "vcfight": "Start VC Fight.",
-                "vcstop": "Stop VC Fight.",
-                "vcjoin": "Join the current Voice Chat.",
-                "vcleave": "Leave the current Voice Chat.",
-                "vcall": "Call members in the VC workflow.",
-                "vcmute": "Mute in VC.",
-                "vcunmute": "Unmute in VC.",
-                "vclogs": "View VC logs.",
-                "addrc": "Save a replied audio/voice recording.",
-                "removerc": "Remove a saved recording.",
-                "myrc": "List saved recordings.",
-                "rcinfo": "Show saved recording information.",
-                "bass 100-500": "Boost the latest saved recording using a value from 100 to 500.",
-            },
-        }
-        commands = display_commands.get(_normalise_help_name(str(key)), {})
-
-    if not commands:
-        commands = {str(key): "Commands and settings for this module. Use the command shown above with your connected ID."}
-
-    title = str(resolved or key).upper()
-    lines = [f"<blockquote><b>❖ {title} COMMANDS</b></blockquote>"]
+        return f"<blockquote><b>❌ {key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
+    lines = [f"<blockquote><b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
     for command, desc in commands.items():
         command = str(command).strip()
-        # Registered help entries are already the real command syntax. Add
-        # both prefixes only for plain command names; don't duplicate them
-        # when an entry already contains arguments or a prefix.
         if command.startswith((".", "/")):
-            usage = command
+            display = command
         else:
-            usage = f".{command}"
-        alt = usage[1:] if usage.startswith(".") else usage
-        if not alt.startswith("/"):
-            alt = f"/{alt}"
-        lines.append(
-            f"<blockquote>• <code>{usage}</code>  |  <code>{alt}</code>\n"
-            f"  {str(desc)}</blockquote>"
-        )
-    lines.append("<blockquote>💡 Use the command exactly as shown. Arguments such as <code>&lt;group_id&gt;</code> or <code>&lt;text&gt;</code> are replaced with your value.</blockquote>")
+            display = f".{command}"
+        slash = display.replace(".", "/", 1) if display.startswith(".") else display
+        lines.append(f"<blockquote>• <code>{display}</code>  |  <code>{slash}</code>\n  {desc}</blockquote>")
     return "\n".join(lines)
 
 

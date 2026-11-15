@@ -15,13 +15,13 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
 def _download_song(query: str):
-    """Resolve and download one audio track for PyTgCalls."""
+    """Resolve one YouTube result and return a real local audio file."""
     import yt_dlp
 
     job_id = uuid.uuid4().hex
     outtmpl = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
-    options = {
-        "format": "bestaudio[ext=m4a]/bestaudio/best",
+    base_options = {
+        "format": "bestaudio/best",
         "outtmpl": outtmpl,
         "noplaylist": True,
         "quiet": True,
@@ -31,43 +31,39 @@ def _download_song(query: str):
         "geo_bypass": True,
         "retries": 3,
         "fragment_retries": 3,
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
     }
     if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
-        options["cookiefile"] = "cookies.txt"
+        base_options["cookiefile"] = "cookies.txt"
 
-    try:
-        with yt_dlp.YoutubeDL(options) as ydl:
-            info = ydl.extract_info(query, download=True)
-    except Exception as first_error:
-        # YouTube can reject one player client/format. Retry with a different
-        # client set before surfacing the failure to the user.
-        fallback = dict(options)
-        fallback["format"] = "bestaudio/best"
-        fallback["extractor_args"] = {"youtube": {"player_client": ["web_safari", "android"]}}
+    errors = []
+    for clients in (("android", "web"), ("web_safari", "android"), None):
+        options = dict(base_options)
+        if clients:
+            options["extractor_args"] = {"youtube": {"player_client": list(clients)}}
         try:
-            with yt_dlp.YoutubeDL(fallback) as ydl:
+            with yt_dlp.YoutubeDL(options) as ydl:
                 info = ydl.extract_info(query, download=True)
-        except Exception:
-            raise first_error
-        if info and info.get("entries"):
-            info = info["entries"][0]
-        if not info:
-            raise RuntimeError("No result found")
-        requested = ydl.prepare_filename(info)
-        path = requested
-        if not os.path.exists(path):
-            base = os.path.splitext(requested)[0]
-            matches = [
-                os.path.join(DOWNLOAD_DIR, name)
-                for name in os.listdir(DOWNLOAD_DIR)
-                if name.startswith(os.path.basename(base) + ".")
-            ]
-            if matches:
-                path = matches[0]
-        if not os.path.exists(path):
-            raise FileNotFoundError("Downloaded audio file not found")
-        return path, info
+                if info and info.get("entries"):
+                    info = next((x for x in info["entries"] if x), None)
+                if not info:
+                    raise RuntimeError("No YouTube result found")
+                requested = ydl.prepare_filename(info)
+                path = requested if os.path.exists(requested) else None
+                if path is None:
+                    stem = os.path.splitext(requested)[0]
+                    matches = [
+                        os.path.join(DOWNLOAD_DIR, name)
+                        for name in os.listdir(DOWNLOAD_DIR)
+                        if name.startswith(os.path.basename(stem) + ".")
+                    ]
+                    path = matches[0] if matches else None
+                if not path or not os.path.exists(path):
+                    raise FileNotFoundError("Downloaded audio file not found")
+                return path, info
+        except Exception as exc:
+            errors.append(exc)
+
+    raise errors[-1] if errors else RuntimeError("Music download failed")
 
 
 async def play_song_in_chat(client, chat_id: int, query: str):
@@ -79,7 +75,7 @@ async def play_song_in_chat(client, chat_id: int, query: str):
     return path, info
 
 
-@Client.on_message(filters.command(["play", "vplay", "song"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.me)
 async def play_handler(client, message):
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply(
@@ -91,7 +87,7 @@ async def play_handler(client, message):
     query = parts[1].strip() if len(parts) > 1 else ""
     if not query:
         return await message.reply(
-            "<blockquote>🎵 Usage: <code>.play song name</code>, <code>/play song name</code> or <code>/song song name</code></blockquote>",
+            "<blockquote>🎵 Usage: <code>.play song name</code> or <code>/play song name</code></blockquote>",
             parse_mode="html",
         )
 
@@ -142,7 +138,6 @@ add_command_help(
     "Music",
     [
         ["play", "Connected ID only: `.play song name` or `/play song name` searches and plays the song in the current group Voice Chat."],
-        ["song", "Connected ID only: `.song song name` or `/song song name` searches and plays in this group's Voice Chat."],
         ["vplay", "Connected ID only: play audio in the connected account's actual group Voice Chat."],
     ],
 )
