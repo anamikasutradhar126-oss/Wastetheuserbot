@@ -25,7 +25,7 @@ recordings_col = db["UserRecordings"]
 OWNER_USERNAME = "day1Nomore"
 SUPPORT_USERNAME = "wasteBotz"
 FORCE_SUPPORT = "wasteBotz"
-FORCE_UPDATES = "day1Nomore"
+FORCE_UPDATES = "wasteuserbotUpdates"
 
 
 class Data:
