@@ -20,7 +20,7 @@ from pytgcalls.types import GroupCallConfig
 
 from config import GROQ_API_KEY, GROQ_MODEL
 from Waste.modules.help import add_command_help
-from Waste.modules.basic.vcfight import _bridge, _states, _key, _subscription_active
+from Waste.modules.basic.vcfight import _bridge, _states, _key, _subscription_active, _join
 
 log = logging.getLogger(__name__)
 TALK_DIR = Path("vctalk_cache")
@@ -143,11 +143,12 @@ async def _reply_pipeline(client, chat_id, pcm):
             pass
 
 
-def _register_stream_callback(client, call):
-    """Register the stream-frame callback on the PyTgCalls instance.
+def _register_stream_callback(user_client, call):
+    """Register the incoming audio callback and bind it to the userbot client.
 
-    py-tgcalls 2.x expects stream_frame filters to be passed to
-    PyTgCalls.on_update(), not to Pyrogram Client.on_message().
+    PyTgCalls sends the PyTgCalls instance to the callback, not the Pyrogram
+    client. The old implementation therefore used a different state key and
+    always saw VC Talk as disabled.
     """
     if getattr(call, "_waste_vctalk_registered", False):
         return
@@ -157,7 +158,11 @@ def _register_stream_callback(client, call):
         decorator = call.on_update(
             call_filters.stream_frame(Direction.INCOMING, Device.MICROPHONE)
         )
-        decorator(_incoming_audio)
+
+        async def _bound_incoming_audio(call_instance, update):
+            await _incoming_audio(user_client, update)
+
+        decorator(_bound_incoming_audio)
         setattr(call, "_waste_vctalk_registered", True)
     except Exception as exc:
         log.warning("Could not register VC Talk stream callback: %s", exc)
@@ -168,13 +173,11 @@ async def _start_recording(client, chat_id):
     if not _VC_API_OK:
         raise RuntimeError("Installed PyTgCalls version has no incoming stream callback API")
     state, call = await _bridge(client)
-    # RecordStream enables incoming audio frames for the callback API.  The
-    # callback below only buffers short chunks; it does not store recordings.
+    _register_stream_callback(client, call)
+    # RecordStream enables incoming audio frames for the callback API. The
+    # callback only buffers short chunks and does not save the recording.
     params = AudioParameters(bitrate=48000, channels=2)
-    try:
-        await call.record(chat_id, RecordStream(True, params), GroupCallConfig(auto_start=False))
-    except TypeError:
-        await call.record(chat_id, RecordStream(True, params))
+    await call.record(chat_id, RecordStream(True, params))
 
 
 async def _stop_recording(client, chat_id):
@@ -190,18 +193,28 @@ async def _stop_recording(client, chat_id):
 if _VC_API_OK:
     @Client.on_message(filters.command("vctalk", [".", "/"]) & filters.me)
     async def vctalk_command(client, message):
-        action = (message.command[1].lower() if len(message.command) > 1 else "status")
+        args = message.command[1:] if len(message.command) > 1 else []
+        action = args[0].lower() if args else "status"
         chat_id = message.chat.id if message.chat else None
+        if len(args) > 1 and args[1].lstrip("-").isdigit():
+            chat_id = int(args[1])
         if not chat_id:
             return await message.reply("❌ Use `.vctalk on` inside the group whose VC you want to use.")
+
         state, _ = await _bridge(client)
         if action == "on":
+            # Make `.vctalk on` self-contained: if the connected ID is not
+            # already in this VC, join that VC first.
             if chat_id not in state.joined:
-                return await message.reply("❌ Connected ID is not in this VC. Use `.join <group_id>` first.")
+                try:
+                    await _join(client, int(chat_id))
+                    state, _ = await _bridge(client)
+                except Exception as exc:
+                    return await message.reply(f"❌ Connected ID could not join this VC: `{type(exc).__name__}`")
             _talk_enabled[(_owner_key(client), int(chat_id))] = True
             _talk_buffers.setdefault((_owner_key(client), int(chat_id)), bytearray())
             try:
-                await _start_recording(client, chat_id)
+                await _start_recording(client, int(chat_id))
             except Exception as exc:
                 _talk_enabled.pop((_owner_key(client), int(chat_id)), None)
                 return await message.reply(f"❌ VC Talk could not start: `{type(exc).__name__}`")
@@ -209,9 +222,9 @@ if _VC_API_OK:
         if action == "off":
             _talk_enabled.pop((_owner_key(client), int(chat_id)), None)
             _talk_buffers.pop((_owner_key(client), int(chat_id)), None)
-            await _stop_recording(client, chat_id)
+            await _stop_recording(client, int(chat_id))
             return await message.reply("🔴 **VC Talk OFF**")
-        return await message.reply(f"🎙️ **VC Talk:** {'🟢 ON' if _enabled(client, chat_id) else '🔴 OFF'}")
+        return await message.reply(f"🎙️ **VC Talk:** {'🟢 ON' if _enabled(client, int(chat_id)) else '🔴 OFF'}")
 
     async def _incoming_audio(client, update: StreamFrames):
         # PyTgCalls dispatches stream updates to this callback.  Keep a small

@@ -37,7 +37,7 @@ HELP_MENU = r"""<blockquote>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯＴ - ＨＥＬ�
 | promotion             | aichat                 |
 | Music                 | AutoTextPromo          |
 +-----------------------+------------------------+
-• @day1Nomore × @wasteBotz .</blockquote>"""
+• @wasteuserbotUpdates × @wasteBotz .</blockquote>"""
 
 FORCE_TEXT = """<blockquote><b>👑 ＷＡＳＴＥ Ｘ ＵＢＯＴ — FORCE COMMANDS 👑</b>
 
@@ -47,7 +47,7 @@ FORCE_TEXT = """<blockquote><b>👑 ＷＡＳＴＥ Ｘ ＵＢＯＴ — FORCE C
 
 FORCE_CHANNELS = [
     ("wasteBotz", "🛡️ SUPPORT CHANNEL"),
-    ("day1Nomore", "📢 UPDATE CHANNEL"),
+    ("wasteuserbotUpdates", "📢 UPDATE CHANNEL"),
 ]
 
 
@@ -81,7 +81,7 @@ def _recordings_keyboard():
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🛡️  JOIN SUPPORT  ➜", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("📢  JOIN UPDATES  ➜", url="https://t.me/day1Nomore")],
+        [InlineKeyboardButton("📢  JOIN UPDATES  ➜", url="https://t.me/wasteuserbotUpdates")],
         [InlineKeyboardButton("💚  ✅ CHECK AGAIN  💚", callback_data="force_check")],
     ])
 
@@ -92,13 +92,13 @@ def _force_join_text():
 To continue using <b>WASTE X UBOT</b>, you must join both channels below.
 
 🛡️ Support: @wasteBotz
-📢 Updates: @day1Nomore
+📢 Updates: @wasteuserbotUpdates
 
 After joining both channels, tap <b>CHECK AGAIN</b>.</blockquote>"""
 
 
 async def _joined(client, user_id):
-    for chat in ("@wasteBotz", "@day1Nomore"):
+    for chat in ("@wasteBotz", "@wasteuserbotUpdates"):
         try:
             member = await client.get_chat_member(chat, user_id)
             status = getattr(member, "status", None)

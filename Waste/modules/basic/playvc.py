@@ -21,7 +21,7 @@ def _download_song(query: str):
     job_id = uuid.uuid4().hex
     outtmpl = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
     base_options = {
-        "format": "bestaudio/best",
+        "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
         "outtmpl": outtmpl,
         "noplaylist": True,
         "quiet": True,
@@ -29,20 +29,24 @@ def _download_song(query: str):
         "default_search": "ytsearch1",
         "source_address": "0.0.0.0",
         "geo_bypass": True,
-        "retries": 3,
-        "fragment_retries": 3,
+        "retries": 5,
+        "fragment_retries": 5,
+        "file_access_retries": 3,
+        "socket_timeout": 30,
+        "nocheckcertificate": True,
     }
     if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
         base_options["cookiefile"] = "cookies.txt"
 
     errors = []
-    for clients in (("android", "web"), ("web_safari", "android"), None):
+    search_query = query if query.startswith(("http://", "https://", "ytsearch", "yt://")) else f"ytsearch1:{query}"
+    for clients in (("android", "web"), ("android", "ios", "web"), ("web_safari", "android"), None):
         options = dict(base_options)
         if clients:
             options["extractor_args"] = {"youtube": {"player_client": list(clients)}}
         try:
             with yt_dlp.YoutubeDL(options) as ydl:
-                info = ydl.extract_info(query, download=True)
+                info = ydl.extract_info(search_query, download=True)
                 if info and info.get("entries"):
                     info = next((x for x in info["entries"] if x), None)
                 if not info:

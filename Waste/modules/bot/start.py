@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from pyrogram import Client, filters, enums
 from pyrogram.errors import SessionPasswordNeeded, PhoneCodeExpired, PhoneCodeInvalid
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, InputMediaVideo
 from pymongo import MongoClient
 
 from config import OWNER_ID, ALIVE_PIC, MONGO_URL
@@ -25,7 +25,8 @@ recordings_col = db["UserRecordings"]
 OWNER_USERNAME = "day1Nomore"
 SUPPORT_USERNAME = "wasteBotz"
 FORCE_SUPPORT = "wasteBotz"
-FORCE_UPDATES = "day1Nomore"
+FORCE_UPDATES = "wasteuserbotUpdates"
+START_VIDEO_URL = "https://www.image2url.com/r2/default/videos/1794758121681-9a91954b-c9c6-4323-9fd0-9bf9e42ed0fa.mp4"
 
 
 class Data:
@@ -144,7 +145,7 @@ FORCE_CAPTION = """<blockquote><b>👑 WASTE X UBOT — ACCESS REQUIRED 👑</b>
 To unlock the bot, join both official channels below.
 
 🛡️ <b>Support</b> — @wasteBotz
-📢 <b>Updates</b> — @day1Nomore
+📢 <b>Updates</b> — @wasteuserbotUpdates
 
 ✨ After joining both channels, press <b>CHECK AGAIN</b>.
 
@@ -154,7 +155,10 @@ To unlock the bot, join both official channels below.
 async def _send_start_or_force(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
-    await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML)
+    try:
+        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+    except Exception:
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command("start", [".", "/"]) & filters.private)
@@ -176,66 +180,88 @@ async def force_handler(client: Client, message: Message):
         return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
-BOT_FORCE_TEXT = """<blockquote><b>❖ ＷＡＳＴＥ Ｘ ＵＢＯＴ - FORCE COMMANDS ❖</b>
+BOT_FORCE_TEXT = """<blockquote><b>👑 ＷＡＳＴＥ Ｘ ＵＢＯＴ — FORCE COMMANDS 👑</b>\n\n✨ Choose a command/module below to open its details.\n🔹 Tap any command to view its usage.\n🔹 Music, VcFight and Recordings have their own command pages.\n🔹 Use <code>.help &lt;command&gt;</code> from a connected ID for direct details.</blockquote>"""
 
-Tap a category below to open its commands and usage.
 
-<b>Music/Song, VcFight and AutoTextPromo have separate command menus.</b></blockquote>"""
+def _bot_force_keys():
+    try:
+        from Waste.modules.help.help import CMD_HELP, MODULE_ALIASES
+        explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "vctalk", "autoreact", "mmar", "omar"]
+        keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys()) + list(MODULE_ALIASES.values())))
+        return [k for k in keys if k not in {"Music", "VcFight", "AutoTextPromo", "Promotion"}]
+    except Exception:
+        return ["Autopic", "admin", "afk", "animation", "aichat", "autoreact", "mmar", "omar", "promotion", "vctalk", "vctools", "weather"]
 
-BOT_FORCE_CATEGORIES = [
-    ("🎵 MUSIC / SONG", "music"), ("⚔️ VCFIGHT", "vcfight"),
-    ("🎙️ VC TALK", "vctalk"), ("🤖 AICHAT", "aichat"),
-    ("⚡ AUTOREACT", "autoreact"), ("😂 MMAR / OMAR", "reactplus"),
-    ("📢 AUTOTEXTPROMO", "autotextpromo"), ("🎨 AUTOPIC", "autopic"),
-    ("🛠️ ADMIN", "admin"), ("😴 AFK", "afk"),
-    ("🎬 ANIMATION", "animation"), ("📣 PROMOTION", "promotion"),
-    ("🔧 TOOLS", "tools"),
-]
 
-BOT_FORCE_COMMANDS = {
-    "music": "<blockquote><b>🎵 MUSIC / SONG</b>\n\n<code>.play song name</code>\n<code>/play song name</code>\n\nThe connected ID is used as the VC assistant/player.</blockquote>",
-    "vcfight": "<blockquote><b>⚔️ VCFIGHT</b>\n\n<code>.join &lt;group_id&gt;</code>\n<code>.allvc join</code> / <code>.allvc leave</code>\n<code>.fight</code> / <code>.fightstop</code>\n<code>.vcleave</code>\n<code>.vcstatus</code>\n<code>.recordings</code>\n<code>.addrc</code> / <code>.removerc</code> / <code>.myrc</code> / <code>.rcinfo</code>\n\nUse either <code>.</code> or <code>/</code>.</blockquote>",
-    "autotextpromo": "<blockquote><b>📢 AUTOTEXTPROMO</b>\n\n<code>.autotextpromo on</code>\n<code>.autotextpromo off</code>\n<code>/autotextpromo on</code>\n<code>/autotextpromo off</code></blockquote>",
-    "aichat": "<blockquote><b>🤖 AICHAT</b>\n\nUse the existing AI chat commands from the connected userbot. Both <code>.</code> and <code>/</code> prefixes are supported where registered.</blockquote>",
-    "autopic": "<blockquote><b>🎨 AUTOPIC</b>\n\nUse <code>.autopic</code> / <code>/autopic</code> and the existing Autopic settings.</blockquote>",
-    "admin": "<blockquote><b>🛠️ ADMIN</b>\n\nExisting administrator commands remain available through the connected userbot.</blockquote>",
-    "afk": "<blockquote><b>😴 AFK</b>\n\n<code>.afk</code> / <code>/afk</code> and the existing AFK settings.</blockquote>",
-    "animation": "<blockquote><b>🎬 ANIMATION</b>\n\nExisting animation commands are available from the connected userbot.</blockquote>",
-    "promotion": "<blockquote><b>📣 PROMOTION</b>\n\n<code>.promotion &lt;text&gt;</code>\n<code>.autotextpromo on/off</code></blockquote>",
-    "tools": "<blockquote><b>🔧 TOOLS</b>\n\nAll existing tool commands remain available from the connected userbot.</blockquote>",
-}
-
-def _bot_force_keyboard():
-    rows = []
-    for i in range(0, len(BOT_FORCE_CATEGORIES), 2):
-        row = [InlineKeyboardButton(BOT_FORCE_CATEGORIES[i][0], callback_data=f"botforce:{BOT_FORCE_CATEGORIES[i][1]}")]
-        if i + 1 < len(BOT_FORCE_CATEGORIES):
-            row.append(InlineKeyboardButton(BOT_FORCE_CATEGORIES[i+1][0], callback_data=f"botforce:{BOT_FORCE_CATEGORIES[i+1][1]}"))
+def _bot_force_keyboard(page=0):
+    keys = _bot_force_keys()
+    per_page = 20
+    total = max(1, (len(keys) + per_page - 1) // per_page)
+    page = max(0, min(int(page), total - 1))
+    rows = [
+        [InlineKeyboardButton("🎵 MUSIC / SONG", callback_data="botforce:music"), InlineKeyboardButton("⚔️ VCFIGHT", callback_data="botforce:vcfight")],
+        [InlineKeyboardButton("🎙️ RECORDINGS", callback_data="botforce:recordings"), InlineKeyboardButton("📢 AUTOTEXTPROMO", callback_data="botforce:autotextpromo")],
+    ]
+    chunk = keys[page * per_page:(page + 1) * per_page]
+    for i in range(0, len(chunk), 2):
+        row = [InlineKeyboardButton(f"📌 {chunk[i]}", callback_data=f"botforce:cmd:{chunk[i]}")]
+        if i + 1 < len(chunk):
+            row.append(InlineKeyboardButton(f"📌 {chunk[i+1]}", callback_data=f"botforce:cmd:{chunk[i+1]}"))
         rows.append(row)
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton("◀️ BACK", callback_data=f"botforce:page:{page-1}"))
+    nav.append(InlineKeyboardButton(f"{page+1}/{total}", callback_data="botforce:noop"))
+    if page < total - 1:
+        nav.append(InlineKeyboardButton("NEXT ▶️", callback_data=f"botforce:page:{page+1}"))
+    rows.append(nav)
+    rows.append([InlineKeyboardButton("🏠 MAIN MENU", callback_data="home")])
     return InlineKeyboardMarkup(rows)
 
-@app.on_message(filters.command("help", [".", "/"]) & filters.private)
-async def help_command(client: Client, message: Message):
+
+def _bot_force_media_kwargs():
+    return dict(caption=BOT_FORCE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+
+
+@app.on_message(filters.command("force", [".", "/"]) & filters.private)
+async def force_handler(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
-    from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _find_help_key, _module_text
-    arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
-    if arg:
-        key = _find_help_key(arg)
-        if key:
-            return await message.reply_photo(ALIVE_PIC, caption=_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
-    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode=enums.ParseMode.HTML)
+    try:
+        return await client.send_video(message.chat.id, START_VIDEO_URL, reply_markup=_bot_force_keyboard(0), **_bot_force_media_kwargs())
+    except Exception:
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
+
 
 @app.on_callback_query(filters.regex(r"^botforce:"))
 async def bot_force_callback(client: Client, query: CallbackQuery):
     await query.answer()
-    from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _module_text, _find_help_key
-    key = query.data.split(":", 1)[1]
-    if key == "menu":
-        return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=_force_keyboard())
-    resolved = _find_help_key(key) or key
-    text = _module_text(resolved)
-    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
+    data = query.data.split(":", 1)[1]
+    if data == "noop":
+        return
+    if data == "menu":
+        try:
+            return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=BOT_FORCE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
+        except Exception:
+            return await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
+    if data.startswith("page:"):
+        page = int(data.split(":", 1)[1])
+        try:
+            return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=BOT_FORCE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(page))
+        except Exception:
+            return await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(page), parse_mode=enums.ParseMode.HTML)
+    if data in {"music", "vcfight", "recordings", "autotextpromo"}:
+        from Waste.modules.help.help import _find_help_key, _module_text
+        key = {"music": "Music", "vcfight": "VcFight", "recordings": "VcFight", "autotextpromo": "AutoTextPromo"}[data]
+        text = _module_text(_find_help_key(key) or key)
+    elif data.startswith("cmd:"):
+        from Waste.modules.help.help import _find_help_key, _module_text
+        raw = data.split(":", 1)[1]
+        key = _find_help_key(raw) or raw
+        text = _module_text(key)
+    else:
+        return
+    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_callback_query(filters.regex(r"^start_force_check$"))
@@ -244,7 +270,7 @@ async def start_force_check(client: Client, query: CallbackQuery):
         await query.answer("Please join both channels first.", show_alert=True)
         return
     await query.answer("Joined successfully ✓")
-    await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
+    await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=Data.START, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
@@ -255,13 +281,15 @@ async def callback_handler(client: Client, query: CallbackQuery):
     await query.answer()
     data = query.data
     if data == "home":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
+        try:
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=Data.START, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
+        except Exception:
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
     elif data in {"help", "force_menu"}:
         try:
-            from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=FORCE_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=_force_keyboard())
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=BOT_FORCE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
         except Exception:
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+            await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
     elif data == "about":
         await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "donate":
