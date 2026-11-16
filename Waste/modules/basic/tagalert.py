@@ -7,18 +7,19 @@ from Waste.modules.help import add_command_help
 log = []
 
 
-@Client.on_message(filters.command("tagalert on", [".", "/"]) & filters.me)
-async def set_no_log_p_m(client: Client, message: Message):
-    if LOG_GROUP != -100:
-        if not message.chat.id in log:
-            log.append(message.chat.id)
-            await message.edit("**ᴛᴀɢ ᴀʟᴇʀᴛ ᴀᴄᴛɪᴠᴀᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ**")
-
-@Client.on_message(filters.command("tagalert off", [".", "/"]) & filters.me)
-async def set_no_log_p_m(client: Client, message: Message):
-        if not message.chat.id in log:
-            log.remove(message.chat.id)
-            await message.edit("**ᴛᴀɢ ᴀʟᴇʀᴛ ᴅᴇᴀᴄᴛɪᴠᴀᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ**")
+@Client.on_message(filters.command("tagalert", [".", "/"]) & filters.me)
+async def tagalert_command(client: Client, message: Message):
+    action = (message.command[1].lower() if len(message.command) > 1 else "status")
+    chat_id = message.chat.id
+    if action == "on":
+        if chat_id not in log:
+            log.append(chat_id)
+        return await message.edit("**ᴛᴀɢ ᴀʟᴇʀᴛ ᴀᴄᴛɪᴠᴀᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ**")
+    if action == "off":
+        if chat_id in log:
+            log.remove(chat_id)
+        return await message.edit("**ᴛᴀɢ ᴀʟᴇʀᴛ ᴅᴇᴀᴄᴛɪᴠᴀᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ**")
+    return await message.edit("**ᴛᴀɢ ᴀʟᴇʀᴛ:** " + ("ON" if chat_id in log else "OFF"))
 
 if log:
  @Client.on_message(filters.group & filters.mentioned & filters.incoming)
