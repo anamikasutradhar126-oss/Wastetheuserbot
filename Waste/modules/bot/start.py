@@ -31,8 +31,8 @@ FORCE_UPDATES = "wasteuserbotUpdates"
 
 def _main_media(caption):
     if ALIVE_VIDEO:
-        return InputMediaVideo(ALIVE_VIDEO, caption=caption, parse_mode="html")
-    return InputMediaPhoto(ALIVE_PIC, caption=caption, parse_mode="html")
+        return InputMediaVideo(ALIVE_VIDEO, caption=caption, parse_mode="HTML")
+    return InputMediaPhoto(ALIVE_PIC, caption=caption, parse_mode="HTML")
 
 
 class Data:
@@ -158,13 +158,13 @@ FORCE_CAPTION = """<blockquote><tg-emoji emoji-id="5989952280823076303">✨</tg-
 async def _send_start_or_force(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         if ALIVE_VIDEO:
-            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
         if ALIVE_VIDEO:
-            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
     if ALIVE_VIDEO:
-        return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode="html")
-    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode="html")
+        return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode="HTML")
+    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode="HTML")
 
 
 @app.on_message(filters.command("start", [".", "/"]) & filters.private)
@@ -179,15 +179,15 @@ async def force_handler(client: Client, message: Message):
     # show the same join screen used by /start.
     if not await _force_joined(client, message.from_user.id):
         if ALIVE_VIDEO:
-            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
         if ALIVE_VIDEO:
-            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
     try:
         from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
     except Exception:
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="html")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(), parse_mode="HTML")
 
 
 BOT_FORCE_TEXT = """<blockquote><b>❖ ＷＡＳＴＥ Ｘ ＵＢＯＴ - FORCE COMMANDS ❖</b>
@@ -230,26 +230,26 @@ def _bot_force_keyboard():
 async def help_command(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         if ALIVE_VIDEO:
-            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="html")
+            return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode="HTML")
     from Waste.modules.help.help import FORCE_TEXT, _force_keyboard, _module_text, _find_help_key
     arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     if arg:
         key = _find_help_key(arg)
         if key:
-            return await message.reply_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="html")
+            return await message.reply_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode="HTML")
     if ALIVE_VIDEO:
-        return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
-    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        return await client.send_video(message.chat.id, ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+    return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
 
 @app.on_callback_query(filters.regex(r"^botforce:"))
 async def bot_force_callback(client: Client, query: CallbackQuery):
     await query.answer()
     key = query.data.split(":", 1)[1]
     if key == "menu":
-        return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=BOT_FORCE_TEXT, parse_mode="html"), reply_markup=_bot_force_keyboard())
+        return await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=BOT_FORCE_TEXT, parse_mode="HTML"), reply_markup=_bot_force_keyboard())
     text = BOT_FORCE_COMMANDS.get(key, BOT_FORCE_TEXT)
-    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode="html")
+    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="botforce:menu")]]), parse_mode="HTML")
 
 
 @app.on_callback_query(filters.regex(r"^start_force_check$"))
@@ -261,11 +261,11 @@ async def start_force_check(client: Client, query: CallbackQuery):
     if ALIVE_VIDEO:
         from pyrogram.types import InputMediaVideo
         try:
-            await query.message.edit_media(InputMediaVideo(ALIVE_VIDEO, caption=Data.START, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.buttons))
+            await query.message.edit_media(InputMediaVideo(ALIVE_VIDEO, caption=Data.START, parse_mode="HTML"), reply_markup=InlineKeyboardMarkup(Data.buttons))
         except Exception:
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.buttons))
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode="HTML"), reply_markup=InlineKeyboardMarkup(Data.buttons))
     else:
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode="HTML"), reply_markup=InlineKeyboardMarkup(Data.buttons))
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
@@ -282,7 +282,7 @@ async def callback_handler(client: Client, query: CallbackQuery):
             from Waste.modules.help.help import FORCE_TEXT, _force_keyboard
             await query.message.edit_media(_main_media(FORCE_TEXT), reply_markup=_force_keyboard())
         except Exception:
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="html"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.HELP, parse_mode="HTML"), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "about":
         await query.message.edit_media(_main_media(Data.ABOUT), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
     elif data == "donate":

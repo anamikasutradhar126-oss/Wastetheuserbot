@@ -133,13 +133,13 @@ async def _joined(client, user_id):
 async def _send_force_join(client, message):
     if ALIVE_VIDEO:
         try:
-            return await message.reply_video(ALIVE_VIDEO, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
+            return await message.reply_video(ALIVE_VIDEO, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="HTML")
         except Exception:
             pass
     try:
-        return await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
+        return await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="HTML")
     except Exception:
-        return await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="html")
+        return await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="HTML")
 
 
 def _group_help_keyboard():
@@ -176,10 +176,10 @@ async def force_command(client, message):
         return await _send_force_join(client, message)
     try:
         if ALIVE_VIDEO:
-            return await message.reply_video(ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
-        return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+            return await message.reply_video(ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+        return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
     except Exception:
-        return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+        return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
 
 
 @Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
@@ -193,17 +193,17 @@ async def module_help(client: Client, message: Message):
         if not help_arg:
             try:
                 if ALIVE_VIDEO:
-                    return await message.reply_video(ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
-                return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+                    return await message.reply_video(ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+                return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
             except Exception:
-                return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+                return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
 
     if not help_arg:
         return await message.reply_text(_help_page_text(1), parse_mode=enums.ParseMode.HTML, reply_markup=_help_page_keyboard(1))
 
     key = _find_help_key(help_arg)
     if key:
-        return await message.reply_text(_module_text(key), parse_mode="html")
+        return await message.reply_text(_module_text(key), parse_mode="HTML")
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
 
@@ -216,20 +216,20 @@ async def group_help_callback(client, query):
             return
         page = int(raw)
         try:
-            return await query.message.edit_caption(_help_page_text(page), reply_markup=_help_page_keyboard(page), parse_mode="html")
+            return await query.message.edit_caption(_help_page_text(page), reply_markup=_help_page_keyboard(page), parse_mode="HTML")
         except Exception:
-            return await query.message.edit_text(_help_page_text(page), reply_markup=_help_page_keyboard(page), parse_mode="html")
+            return await query.message.edit_text(_help_page_text(page), reply_markup=_help_page_keyboard(page), parse_mode="HTML")
     key = query.data.split(":", 1)[1]
     if key == "menu":
         try:
-            return await query.message.edit_caption(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="html")
+            return await query.message.edit_caption(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="HTML")
         except Exception:
-            return await query.message.edit_text(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="html")
+            return await query.message.edit_text(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="HTML")
     text = _module_text(key)
     try:
-        await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs", callback_data="help_page:1")]]), parse_mode="html")
+        await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs", callback_data="help_page:1")]]), parse_mode="HTML")
     except Exception:
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs", callback_data="help_page:1")]]), parse_mode="html")
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs", callback_data="help_page:1")]]), parse_mode="HTML")
 
 
 @Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|mod:|record:)"))
@@ -243,30 +243,30 @@ async def force_callback(client, query):
         try:
             await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_keyboard())
         except Exception:
-            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
         return
     if query.data == "force_help":
         await query.answer()
         try:
             await query.message.edit_caption(_help_page_text(1), reply_markup=_help_page_keyboard(1))
         except Exception:
-            await query.message.edit_text(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="html")
+            await query.message.edit_text(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="HTML")
         return
     if query.data == "force_menu":
         await query.answer()
         try:
             await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_keyboard())
         except Exception:
-            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="html")
+            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
         return
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]
         await query.answer()
         kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]])
         try:
-            await query.message.edit_caption(_module_text(key), reply_markup=kb, parse_mode="html")
+            await query.message.edit_caption(_module_text(key), reply_markup=kb, parse_mode="HTML")
         except Exception:
-            await query.message.edit_text(_module_text(key), reply_markup=kb, parse_mode="html")
+            await query.message.edit_text(_module_text(key), reply_markup=kb, parse_mode="HTML")
         return
     if query.data.startswith("force_record:"):
         await query.answer()
@@ -275,17 +275,17 @@ async def force_callback(client, query):
         text = descriptions.get(action, "<blockquote>Use the corresponding recording command from the menu.</blockquote>")
         kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]])
         try:
-            await query.message.edit_caption(text, reply_markup=kb, parse_mode="html")
+            await query.message.edit_caption(text, reply_markup=kb, parse_mode="HTML")
         except Exception:
-            await query.message.edit_text(text, reply_markup=kb, parse_mode="html")
+            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
         return
     if query.data == "force_recordings":
         await query.answer()
         text = "<blockquote>🎙️ <b>VCFIGHT RECORDINGS</b>\n\nManage your saved recordings below.</blockquote>"
         try:
-            await query.message.edit_caption(text, reply_markup=_recordings_keyboard(), parse_mode="html")
+            await query.message.edit_caption(text, reply_markup=_recordings_keyboard(), parse_mode="HTML")
         except Exception:
-            await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode="html")
+            await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode="HTML")
 
 
 async def module_helper(client: Client, message: Message):
@@ -298,7 +298,7 @@ async def module_helper(client: Client, message: Message):
         return await module_help(client, message)
     key = _find_help_key(help_arg)
     if key:
-        return await message.reply_text(_module_text(key), parse_mode="html")
+        return await message.reply_text(_module_text(key), parse_mode="HTML")
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
 
