@@ -35,6 +35,21 @@ PE_COMMAND = 5992095761561554607
 PE_SUPPORT = 5445284980978621387
 PE_VERIFIED = 5226512880362332956
 
+# Start-menu buttons are defined here so /start never depends on the legacy
+# Data object, which does not contain the old buttons in this build.
+START_BUTTONS = [
+    [InlineKeyboardButton("ＢＡＳＩＣ ＧＵＩＤＥ", callback_data="guide")],
+    [InlineKeyboardButton("ＷＡＳＴＥ ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("ＡＢＯＵＴ", callback_data="about")],
+    [InlineKeyboardButton("ＨＥＬＰ", callback_data="help"), InlineKeyboardButton("ＭＵＳＩＣ", callback_data="botforce:cmd:Music")],
+    [InlineKeyboardButton("ＵＰＤＡＴＥＳ ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("ＳＵＰＰＯＲＴ ↗", url="https://t.me/wasteBotz")],
+]
+
+HOME_BUTTONS = START_BUTTONS
+
+ABOUT_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴘᴏᴡᴇʀғᴜʟ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀʙᴏᴛ ᴡɪᴛʜ ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ, ᴜᴛɪʟɪᴛɪᴇs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ.</b></blockquote>"
+DONATE_TEXT = ABOUT_TEXT
+GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴜsᴇ /ᴀᴅᴅ ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ /ʜᴇʟᴘ ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
+
 def _pe(eid, fallback="✦"):
     return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
 
@@ -75,6 +90,29 @@ def _force_caption(message: Message) -> str:
 {_pe(PE_VERIFIED)} <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴠᴇʀɪғɪᴇᴅ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
 
 
+async def _force_joined(client: Client, user_id: int) -> bool:
+    """Return True only when the user is a member of both required channels."""
+    for chat in ("@wasteBotz", "@wasteuserbotUpdates"):
+        try:
+            member = await client.get_chat_member(chat, user_id)
+            status = getattr(member, "status", None)
+            value = getattr(status, "value", status)
+            if value in {"left", "kicked", "banned"}:
+                return False
+        except Exception as exc:
+            log.warning("Force-join check failed for %s: %s", chat, type(exc).__name__)
+            return False
+    return True
+
+
+def _force_markup():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🛡️ ＳＵＰＰＯＲＴ ↗", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("📢 ＵＰＤＡＴＥＳ ↗", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("✅ ＶＥＲＩＦＩＥＤ", callback_data="start_force_check")],
+    ])
+
+
 async def _send_start_or_force(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         try:
@@ -82,9 +120,9 @@ async def _send_start_or_force(client: Client, message: Message):
         except Exception:
             return await client.send_photo(message.chat.id, ALIVE_PIC, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
     try:
-        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_start_caption(message), reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_start_caption(message), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
     except Exception:
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=_start_caption(message), reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML)
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=_start_caption(message), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command("start", [".", "/"]) & filters.private)
@@ -201,11 +239,17 @@ async def start_force_check(client: Client, query: CallbackQuery):
         await query.answer("Please join both channels first.", show_alert=True)
         return
     await query.answer("Joined successfully ✓")
-    await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
+    try:
+        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+    except Exception:
+        try:
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+        except Exception:
+            await query.message.edit_text(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
-    await message.reply_text(Data.ABOUT, reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+    await message.reply_text(ABOUT_TEXT, reply_markup=InlineKeyboardMarkup(HOME_BUTTONS))
 
 @app.on_callback_query(filters.regex(r"^(home|help|force_menu|about|donate|guide)$"))
 async def callback_handler(client: Client, query: CallbackQuery):
@@ -213,20 +257,20 @@ async def callback_handler(client: Client, query: CallbackQuery):
     data = query.data
     if data == "home":
         try:
-            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
         except Exception:
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
     elif data in {"help", "force_menu"}:
         try:
             await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
         except Exception:
             await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
     elif data == "about":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.ABOUT, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.home_buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=ABOUT_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(HOME_BUTTONS))
     elif data == "donate":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.DONATE, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.guide_buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=DONATE_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
     elif data == "guide":
-        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.GUIDE, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.back_buttons))
+        await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=GUIDE_TEXT, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
 
 @app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
 async def group_play_command(client: Client, message: Message):
@@ -394,13 +438,22 @@ async def remove_session(client: Client, msg: Message):
 async def session_handler(client: Client, msg: Message):
     if not msg.from_user or not msg.text:
         return
+    # Do not let the catch-all login wizard consume bot commands.
+    # Without this guard, /add itself can be seen again by this handler
+    # immediately after the /add handler sets awaiting_phone, causing
+    # "/add" to be sent to Telegram as if it were a phone number.
+    stripped = msg.text.strip()
+    if stripped.startswith(("/", ".")):
+        return
     uid = msg.from_user.id
     session = user_sessions.get(uid)
     if not session:
         return
     step = session.get("step")
     if step == "awaiting_phone":
-        phone = msg.text.strip()
+        phone = msg.text.strip().replace(" ", "")
+        if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 8 or len(phone) > 16:
+            return await msg.reply("❌ ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `+918200000009`")
         temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True, device_model="Waste", app_version="1.0")
         session.update({"phone": phone, "client": temp})
         try:
