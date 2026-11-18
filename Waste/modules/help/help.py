@@ -47,11 +47,11 @@ HELP_MENU = f"""<blockquote>{PE(PE_USER)} <b>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯ
 
 {PE(PE_SUPPORT)} <b>@wasteBotz</b>  ×  <b>@wasteuserbotUpdates</b></blockquote>"""
 
-FORCE_TEXT = f"""<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
+FORCE_TEXT = f"""<blockquote>{PE(PE_USER)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
 
 FORCE_CHANNELS = [
-    ("wasteBotz", "🛡️ SUPPORT CHANNEL"),
-    ("wasteuserbotUpdates", "📢 UPDATE CHANNEL"),
+    ("wasteBotz", "Ｓᴜᴘᴘᴏʀᴛ ᴄʜᴀɴɴᴇʟ"),
+    ("wasteuserbotUpdates", "Ｕᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ"),
 ]
 
 
@@ -87,9 +87,9 @@ def _force_keyboard(page=0):
     rows = []
     chunk = chunks[page]
     for i in range(0, len(chunk), 2):
-        row = [InlineKeyboardButton(f"{PE(PE_COMMAND)} {_ser_name(chunk[i])}", callback_data=f"force_mod:{chunk[i]}")]
+        row = [InlineKeyboardButton(_ser_name(chunk[i]), callback_data=f"force_mod:{chunk[i]}")]
         if i + 1 < len(chunk):
-            row.append(InlineKeyboardButton(f"{PE(PE_COMMAND)} {_ser_name(chunk[i+1])}", callback_data=f"force_mod:{chunk[i+1]}"))
+            row.append(InlineKeyboardButton(_ser_name(chunk[i+1]), callback_data=f"force_mod:{chunk[i+1]}"))
         rows.append(row)
     nav=[]
     if page > 0:
@@ -104,18 +104,18 @@ def _force_keyboard(page=0):
 
 def _recordings_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙖𝙙𝙙𝙧𝙘", callback_data="force_record:addrc"), InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙧𝙚𝙢𝙤𝙫𝙚𝙧𝙘", callback_data="force_record:removerc")],
-        [InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙢𝙮𝙧𝙘", callback_data="force_record:myrc"), InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙧𝙘𝙞𝙣𝙛𝙤", callback_data="force_record:rcinfo")],
-        [InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙗𝙖𝙨𝙨 100–500", callback_data="force_record:bass")],
-        [InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")],
+        [InlineKeyboardButton("𝙖𝙙𝙙𝙧𝙘", callback_data="force_record:addrc"), InlineKeyboardButton("𝙧𝙚𝙢𝙤𝙫𝙚𝙧𝙘", callback_data="force_record:removerc")],
+        [InlineKeyboardButton("𝙢𝙮𝙧𝙘", callback_data="force_record:myrc"), InlineKeyboardButton("𝙧𝙘𝙞𝙣𝙛𝙤", callback_data="force_record:rcinfo")],
+        [InlineKeyboardButton("𝙗𝙖𝙨𝙨 100–500", callback_data="force_record:bass")],
+        [InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")],
     ])
 
 
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"{PE(PE_SUPPORT)} Ｓᴜᴘᴘᴏʀᴛ", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton(f"{PE(PE_SUPPORT)} Ｕᴘᴅᴀᴛᴇs", url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton(f"{PE(PE_VERIFIED)} Ｖᴇʀɪғɪᴇᴅ", callback_data="force_check")],
+        [InlineKeyboardButton("Ｓᴜᴘᴘᴏʀᴛ", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("Ｕᴘᴅᴀᴛᴇs", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("Ｖᴇʀɪғɪᴇᴅ", callback_data="force_check")],
     ])
 
 
@@ -127,7 +127,7 @@ def _force_join_text(user_id=None, name="User"):
             active = any(getattr(c, "_waste_owner_uid", None) == int(user_id) for c in active_sessions)
         except Exception:
             active = False
-    status = "🟢 ACTIVE" if active else "❌ INACTIVE"
+    status = "ᴀᴄᴛɪᴠᴇ" if active else "ɪɴᴀᴄᴛɪᴠᴇ"
     return f"""<blockquote>{PE(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
 {PE(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
@@ -291,7 +291,7 @@ def _module_text(key):
     if not commands:
         commands = dict(MODULE_FALLBACKS.get(key, []))
     if not commands:
-        return f"<blockquote><b>❌ {key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
+        return f"<blockquote>{PE(PE_USER)} <b>{key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
     lines = [f"<blockquote>{PE(PE_USER)} <b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
     for command, desc in commands.items():
         command = str(command).strip()
@@ -351,7 +351,7 @@ async def group_help_callback(client, query):
         await query.message.edit_text(HELP_MENU, reply_markup=_group_help_keyboard(), parse_mode=enums.ParseMode.HTML)
         return
     text = _module_text(key)
-    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 ALL COMMANDS", callback_data="grouphelp:menu")]]), parse_mode=enums.ParseMode.HTML)
+    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ＡＬＬ Ｃᴏᴍᴍᴀɴᴅs", callback_data="grouphelp:menu")]]), parse_mode=enums.ParseMode.HTML)
 
 async def _hosted_for_user(user_id):
     try:
@@ -374,7 +374,7 @@ def _force_recordings_keyboard(user_id):
     for r in rows:
         rid = str(r.get("_id"))
         name = str(r.get("name", "Recording"))[:30]
-        buttons.append([InlineKeyboardButton(f"✦ {name}", callback_data=f"force_rcplay:{rid}")])
+        buttons.append([InlineKeyboardButton(f"{name}", callback_data=f"force_rcplay:{rid}")])
     buttons.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_menu")])
     return rows, InlineKeyboardMarkup(buttons)
 
@@ -386,7 +386,7 @@ async def force_callback(client, query):
         if not await _joined(client, user_id):
             await query.answer("Join both channels first.", show_alert=True)
             return
-        await query.answer("Verified ✓")
+        await query.answer("Verified successfully")
         try:
             await query.message.edit_media(__import__("pyrogram").types.InputMediaVideo(FORCE_VIDEO_URL, caption=_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_force_keyboard(0))
         except Exception:
@@ -395,9 +395,9 @@ async def force_callback(client, query):
     if query.data == "force_help":
         await query.answer()
         try:
-            await query.message.edit_caption(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_caption(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         except Exception:
-            await query.message.edit_text(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_text(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_menu":
         await query.answer()
@@ -420,7 +420,7 @@ async def force_callback(client, query):
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]
         await query.answer()
-        await query.message.edit_caption(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_caption(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_recordings":
         await query.answer()
@@ -433,7 +433,7 @@ async def force_callback(client, query):
         if not hosted:
             return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ᴏɴʟɪɴᴇ.</b></blockquote>", parse_mode=enums.ParseMode.HTML)
         if action == "addrc":
-            return await query.message.edit_text("<blockquote>➕ <b>ᴀᴅᴅʀᴄ</b>\n\nꜱᴇɴᴅ ᴀɴ ᴀᴜᴅɪᴏ / ᴠᴏɪᴄᴇ ᴛᴏ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ᴄʜᴀᴛ ᴏʀ ᴜsᴇ <code>.addrc</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ᴀᴅᴅʀᴄ</b>\n\nꜱᴇɴᴅ ᴀɴ ᴀᴜᴅɪᴏ / ᴠᴏɪᴄᴇ ᴛᴏ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ᴄʜᴀᴛ ᴏʀ ᴜsᴇ <code>.addrc</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
         if action in {"myrc", "rcinfo", "removerc"}:
             try:
                 from Waste.modules.bot.start import recordings_col
@@ -441,7 +441,7 @@ async def force_callback(client, query):
             except Exception:
                 rows = []
             if not rows:
-                return await query.message.edit_text("<blockquote>📂 ɴᴏ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+                return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} ɴᴏ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
             if action == "rcinfo":
                 text = "<blockquote>" + PE(PE_COMMAND) + " <b>ʀᴇᴄᴏʀᴅɪɴɢ ɪɴғᴏ</b>\n\n" + "\n".join(f"{i+1}. {r.get('name','Recording')} — {int(r.get('duration',0))}s" for i,r in enumerate(rows)) + "</blockquote>"
                 return await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
@@ -449,12 +449,12 @@ async def force_callback(client, query):
             for r in rows:
                 rid=str(r.get("_id")); name=str(r.get("name","Recording"))[:30]
                 cb = f"force_rcplay:{rid}" if action == "myrc" else f"force_rcdelete:{rid}"
-                buttons.append([InlineKeyboardButton(f"✦ {name}", callback_data=cb)])
+                buttons.append([InlineKeyboardButton(f"{name}", callback_data=cb)])
             buttons.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")])
             title = "📂 ᴍʏ ʀᴇᴄᴏʀᴅɪɴɢs" if action == "myrc" else "🗑️ ʀᴇᴍᴏᴠᴇ ʀᴇᴄᴏʀᴅɪɴɢ"
             return await query.message.edit_text(f"<blockquote>{PE(PE_COMMAND)} <b>{title}</b>\n\nꜱᴇʟᴇᴄᴛ ᴀ ʀᴇᴄᴏʀᴅɪɴɢ.</blockquote>", reply_markup=InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.HTML)
         if action == "bass":
-            return await query.message.edit_text("<blockquote>🔊 <b>ʙᴀss</b>\n\nᴜsᴇ <code>.bass 100</code> ᴛᴏ <code>.bass 500</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ʙᴀss</b>\n\nᴜsᴇ <code>.bass 100</code> ᴛᴏ <code>.bass 500</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data.startswith("force_rcdelete:"):
         await query.answer()
@@ -471,7 +471,7 @@ async def force_callback(client, query):
                 if rec.get("path") and os.path.exists(rec["path"]): os.remove(rec["path"])
             except Exception:
                 pass
-            return await query.message.edit_text("<blockquote>🗑️ ʀᴇᴄᴏʀᴅɪɴɢ ʀᴇᴍᴏᴠᴇᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} ʀᴇᴄᴏʀᴅɪɴɢ ʀᴇᴍᴏᴠᴇᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
             return await query.answer(f"Delete failed: {type(exc).__name__}", show_alert=True)
     if query.data.startswith("force_rcplay:"):
@@ -488,7 +488,7 @@ async def force_callback(client, query):
             joined = sorted(list(state.joined))
             if not joined:
                 return await query.message.edit_text("<blockquote>❌ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ɪɴ ᴀɴʏ ᴠᴄ. ᴜsᴇ <code>.join &lt;chat_id&gt;</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғɪʀsᴛ.</blockquote>", parse_mode=enums.ParseMode.HTML)
-            kb=[[InlineKeyboardButton(f"▶️ ᴘʟᴀʏ ɪɴ {cid}", callback_data=f"force_vcplay:{rid}:{cid}")] for cid in joined]
+            kb=[[InlineKeyboardButton(f"ᴘʟᴀʏ ɪɴ {cid}", callback_data=f"force_vcplay:{rid}:{cid}")] for cid in joined]
             kb.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")])
             return await query.message.edit_text(f"<blockquote>{PE(PE_COMMAND)} <b>ᴄʜᴏᴏsᴇ ᴠᴄ</b>\n\n🎙️ {rec.get('name','Recording')}</blockquote>", reply_markup=InlineKeyboardMarkup(kb), parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
@@ -505,7 +505,7 @@ async def force_callback(client, query):
             if not rec:
                 return await query.answer("Recording not found", show_alert=True)
             await call.play(int(cid), rec["path"], config=__import__("pytgcalls").types.GroupCallConfig(auto_start=False))
-            return await query.message.edit_text(f"<blockquote>▶️ <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n🎙️ {rec.get('name','Recording')}\n🔊 ᴠᴄ: <code>{cid}</code></blockquote>", parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n{PE(PE_USER)} {rec.get('name','Recording')}\n{PE(PE_USER)} ᴠᴄ: <code>{cid}</code></blockquote>", parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
             return await query.answer(f"Play failed: {type(exc).__name__}", show_alert=True)
 

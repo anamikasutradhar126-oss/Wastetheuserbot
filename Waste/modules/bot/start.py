@@ -42,9 +42,9 @@ def _pe(eid, fallback="✦"):
 # Data object, which does not contain the old buttons in this build.
 START_BUTTONS = [
     [InlineKeyboardButton("ＢＡＳＩＣ ＧＵＩＤＥ", callback_data="guide")],
-    [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｗᴀꜱᴛᴇ ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("ＡＢＯＵＴ", callback_data="about")],
+    [InlineKeyboardButton("Ｗᴀꜱᴛᴇ ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("ＡＢＯＵＴ", callback_data="about")],
     [InlineKeyboardButton("ＨＥＬＰ", callback_data="help"), InlineKeyboardButton("ＭＵＳＩＣ", callback_data="botforce:cmd:Music")],
-    [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｕᴘᴅᴀᴛᴇs ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｓᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/wasteBotz")],
+    [InlineKeyboardButton("Ｕᴘᴅᴀᴛᴇs ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("Ｓᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/wasteBotz")],
 ]
 
 HOME_BUTTONS = START_BUTTONS
@@ -66,7 +66,7 @@ def _is_userbot_active(uid: int) -> bool:
 def _start_caption(message: Message) -> str:
     uid = getattr(getattr(message, "from_user", None), "id", 0)
     name = _started_name(message)
-    status = "ACTIVE" if _is_userbot_active(uid) else "INACTIVE"
+    status = "ᴀᴄᴛɪᴠᴇ" if _is_userbot_active(uid) else "ɪɴᴀᴄᴛɪᴠᴇ"
     return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
 {_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
@@ -78,7 +78,7 @@ def _start_caption(message: Message) -> str:
 def _force_caption(message: Message) -> str:
     uid = getattr(getattr(message, "from_user", None), "id", 0)
     name = _started_name(message)
-    status = "ACTIVE" if _is_userbot_active(uid) else "INACTIVE"
+    status = "ᴀᴄᴛɪᴠᴇ" if _is_userbot_active(uid) else "ɪɴᴀᴄᴛɪᴠᴇ"
     return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
 {_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
@@ -107,9 +107,9 @@ async def _force_joined(client: Client, user_id: int) -> bool:
 
 def _force_markup():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} ＳＵＰＰᴏʀᴛ ↗", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｕᴘᴅᴀᴛᴇs ↗", url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton(f"{_pe(PE_VERIFIED, '✦')} Ｖᴇʀɪғɪᴇᴅ", callback_data="start_force_check")],
+        [InlineKeyboardButton("ＳＵＰＰᴏʀᴛ ↗", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("Ｕᴘᴅᴀᴛᴇs ↗", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("Ｖᴇʀɪғɪᴇᴅ", callback_data="start_force_check")],
     ])
 
 
@@ -168,9 +168,9 @@ def _bot_force_keyboard(page=0):
     rows = []
     items = chunk[page]
     for i in range(0, len(items), 2):
-        row = [InlineKeyboardButton(f"{_pe(PE_COMMAND, '✦')} {_ser_name(items[i])}", callback_data=f"botforce:cmd:{items[i]}")]
+        row = [InlineKeyboardButton(_ser_name(items[i]), callback_data=f"botforce:cmd:{items[i]}")]
         if i + 1 < len(items):
-            row.append(InlineKeyboardButton(f"{_pe(PE_COMMAND, '✦')} {_ser_name(items[i+1])}", callback_data=f"botforce:cmd:{items[i+1]}"))
+            row.append(InlineKeyboardButton(_ser_name(items[i+1]), callback_data=f"botforce:cmd:{items[i+1]}"))
         rows.append(row)
     nav = []
     if page > 0:
@@ -236,7 +236,7 @@ async def start_force_check(client: Client, query: CallbackQuery):
     if not await _force_joined(client, query.from_user.id):
         await query.answer("Please join both channels first.", show_alert=True)
         return
-    await query.answer("Joined successfully ✓")
+    await query.answer("Verified successfully")
     try:
         await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
     except Exception:
@@ -275,9 +275,9 @@ async def group_play_command(client: Client, message: Message):
     parts = message.text.split(None, 1) if message.text else []
     query = parts[1].strip() if len(parts) > 1 else ""
     if not query:
-        return await message.reply_text("🎵 Usage: /play song name")
+        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴀɢᴇ: /play song name</b>", parse_mode=enums.ParseMode.HTML)
     if not active_sessions:
-        return await message.reply_text("❌ No connected ID is online right now.")
+        return await message.reply_text(f"{_pe(PE_USER)} <b>ɴᴏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ᴏɴʟɪɴᴇ ʀɪɢʜᴛ ɴᴏᴡ.</b>", parse_mode=enums.ParseMode.HTML)
 
     hosted = None
     # The bot is only the control interface. Prefer the connected account
@@ -301,7 +301,7 @@ async def group_play_command(client: Client, message: Message):
                 continue
     hosted = hosted or active_sessions[0]
 
-    status = await message.reply_text("🔎 Searching YouTube...")
+    status = await message.reply_text(f"{_pe(PE_USER)} <b>sᴇᴀʀᴄʜɪɴɢ ʏᴏᴜᴛᴜʙᴇ...</b>", parse_mode=enums.ParseMode.HTML)
     path = None
     try:
         from Waste.modules.basic.playvc import play_song_in_chat
@@ -309,11 +309,11 @@ async def group_play_command(client: Client, message: Message):
         title = info.get("title") or query
         duration = info.get("duration_string") or "Unknown"
         if queued:
-            await status.edit_text(f"📥 Queued\n\n🎵 {title}\n⏱️ {duration}")
+            await status.edit_text(f"{_pe(PE_USER)} <b>ǫᴜᴇᴜᴇᴅ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>", parse_mode=enums.ParseMode.HTML)
         else:
-            await status.edit_text(f"▶️ Now Playing\n\n🎵 {title}\n⏱️ {duration}\n🔊 Playing in this group's Voice Chat")
+            await status.edit_text(f"{_pe(PE_USER)} <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>\n{_pe(PE_USER)} <b>ᴘʟᴀʏɪɴɢ ɪɴ ᴛʜɪs ɢʀᴏᴜᴘs ᴠᴏɪᴄᴇ ᴄʜᴀᴛ</b>", parse_mode=enums.ParseMode.HTML)
     except Exception as exc:
-        await status.edit_text(f"❌ Music failed: `{type(exc).__name__}`\n\n`{str(exc)[:500]}`")
+        await status.edit_text(f"{_pe(PE_USER)} <b>ᴍᴜsɪᴄ ғᴀɪʟᴇᴅ: <code>{escape(type(exc).__name__)}</code></b>\n\n<code>{escape(str(exc)[:500])}</code>", parse_mode=enums.ParseMode.HTML)
     finally:
         if path:
             try:
@@ -408,7 +408,7 @@ async def clone(bot: Client, msg: Message):
 async def add_session_command(client: Client, message: Message):
     uid = message.from_user.id
     if _session_doc(uid):
-        return await message.reply("⚠️ ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.")
+        return await message.reply(f"{_pe(PE_USER)} ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.", parse_mode=enums.ParseMode.HTML)
     # A previous expired/failed login must never leave a stale wizard behind.
     old = user_sessions.pop(uid, None)
     if old and old.get("client"):
@@ -430,14 +430,14 @@ async def add_session_command(client: Client, message: Message):
                 sent = await temp.send_code(phone_text)
                 user_sessions[uid]["phone_code_hash"] = sent.phone_code_hash
                 user_sessions[uid]["step"] = "awaiting_otp"
-                return await message.reply("📨 OTP sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `1 2 3 4 5`")
+                return await message.reply(f"{_pe(PE_USER)} ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code>", parse_mode=enums.ParseMode.HTML)
             except Exception as e:
                 try: await temp.disconnect()
                 except Exception: pass
                 user_sessions.pop(uid, None)
-                return await message.reply(f"❌ OTP error: `{e}`\nPlease use /add again.")
-        return await message.reply("❌ ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `+918200000009`")
-    await message.reply("📲 ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):")
+                return await message.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
+        return await message.reply(f"{_pe(PE_USER)} ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code>", parse_mode=enums.ParseMode.HTML)
+    await message.reply(f"{_pe(PE_USER)} ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (ᴇ.ɢ. <code>+918200000009</code>):", parse_mode=enums.ParseMode.HTML)
     user_sessions[uid] = {"step": "awaiting_phone"}
 
 @app.on_message(filters.command("remove", [".", "/"]) & filters.private)
@@ -451,7 +451,7 @@ async def remove_session(client: Client, msg: Message):
                 pass
             active_sessions.remove(hosted)
     result = sessions_col.delete_one({"_id": uid})
-    await msg.reply("✅ ʏᴏᴜʀ sᴇssɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ." if result.deleted_count else "❌ ɴᴏ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ ғᴏᴜɴᴅ.")
+    await msg.reply(f"{_pe(PE_USER)} ʏᴏᴜʀ sᴇssɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ." if result.deleted_count else f"{_pe(PE_USER)} ɴᴏ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ ғᴏᴜɴᴅ.", parse_mode=enums.ParseMode.HTML)
 
 @app.on_message()
 async def session_handler(client: Client, msg: Message):
@@ -472,7 +472,7 @@ async def session_handler(client: Client, msg: Message):
     if step == "awaiting_phone":
         phone = msg.text.strip().replace(" ", "")
         if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 8 or len(phone) > 16:
-            return await msg.reply("❌ ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `+918200000009`")
+            return await msg.reply(f"{_pe(PE_USER)} ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code>", parse_mode=enums.ParseMode.HTML)
         temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True, device_model="Waste", app_version="1.0")
         session.update({"phone": phone, "client": temp})
         try:
@@ -480,9 +480,9 @@ async def session_handler(client: Client, msg: Message):
             sent = await temp.send_code(phone)
             session["phone_code_hash"] = sent.phone_code_hash
             session["step"] = "awaiting_otp"
-            await msg.reply("📨 OTP sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `1 2 3 4 5`")
+            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code>", parse_mode=enums.ParseMode.HTML)
         except Exception as e:
-            await msg.reply(f"❌ OTP error: `{e}`\nPlease use /add again.")
+            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -492,15 +492,15 @@ async def session_handler(client: Client, msg: Message):
             await temp.sign_in(phone_number=session["phone"], phone_code_hash=session["phone_code_hash"], phone_code=msg.text.strip().replace(" ", ""))
         except SessionPasswordNeeded:
             session["step"] = "awaiting_2fa"
-            return await msg.reply("🔐 sᴇɴᴅ ʏᴏᴜʀ 2FA ᴘᴀssᴡᴏʀᴅ.")
+            return await msg.reply(f"{_pe(PE_USER)} sᴇɴᴅ ʏᴏᴜʀ 2ғᴀ ᴘᴀssᴡᴏʀᴅ.", parse_mode=enums.ParseMode.HTML)
         except (PhoneCodeExpired, PhoneCodeInvalid) as e:
-            await msg.reply(f"❌ OTP login failed: `{e}`\nPlease use /add again and enter the newest OTP.")
+            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
             return
         except Exception as e:
-            await msg.reply(f"❌ Login failed: `{e}`\nPlease use /add again.")
+            await msg.reply(f"{_pe(PE_USER)} ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -512,7 +512,7 @@ async def session_handler(client: Client, msg: Message):
             await temp.check_password(msg.text.strip())
             await finalize_login(temp, msg, uid)
         except Exception as e:
-            await msg.reply(f"❌ Incorrect 2FA password: `{e}`\nPlease use /add again.")
+            await msg.reply(f"{_pe(PE_USER)} ɪɴᴄᴏʀʀᴇᴄᴛ 2ғᴀ ᴘᴀssᴡᴏʀᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -556,7 +556,7 @@ async def start_hosted_session(uid, string, notify=False):
         log.warning("Post-connect setup failed for %s: %s", uid, exc)
     if notify:
         try:
-            await app.send_message(uid, "✅ **Userbot Connected**\n\nYour account is now online with the Waste X Userbot features.")
+            await app.send_message(uid, f"{_pe(PE_USER)} <b>ᴜsᴇʀʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ</b>\n\n{_pe(PE_USER)} ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ ɪs ɴᴏᴡ ᴏɴʟɪɴᴇ ᴡɪᴛʜ ᴛʜᴇ ᴡᴀsᴛᴇ x ᴜsᴇʀʙᴏᴛ ғᴇᴀᴛᴜʀᴇs.", parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
             log.warning("Notification failed for %s: %s", uid, exc)
     return hosted
@@ -567,9 +567,9 @@ async def finalize_login(client: Client, msg: Message, uid: int):
         user = await client.get_me()
         sessions_col.update_one({"_id": uid}, {"$set": {"session": string, "name": user.first_name, "user_id": user.id, "username": user.username}}, upsert=True)
         await start_hosted_session(uid, string, notify=False)
-        await msg.reply(f"✅ ʟᴏɢɢᴇᴅ ɪɴ ᴀs **{user.first_name}**.\n\nᴀᴜᴛᴏ-ʜᴏsᴛ ɴᴏᴡ ᴏɴ.\n\nUss account me `.help` se commands dekho.")
+        await msg.reply(f"{_pe(PE_USER)} ʟᴏɢɢᴇᴅ ɪɴ ᴀs <b>{escape(str(user.first_name))}</b>.\n\n{_pe(PE_USER)} ᴀᴜᴛᴏ-ʜᴏsᴛ ɴᴏᴡ ᴏɴ.\n\n{_pe(PE_USER)} ᴜss ᴀᴄᴄᴏᴜɴᴛ ᴍᴇ <code>.help</code> sᴇ ᴄᴏᴍᴍᴀɴᴅs ᴅᴇᴋʜᴏ.", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
-        await msg.reply(f"❌ ғɪɴᴀʟ sᴛᴇᴘ ғᴀɪʟᴇᴅ: `{e}`")
+        await msg.reply(f"{_pe(PE_USER)} ғɪɴᴀʟ sᴛᴇᴘ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>", parse_mode=enums.ParseMode.HTML)
     finally:
         try: await client.disconnect()
         except Exception: pass
