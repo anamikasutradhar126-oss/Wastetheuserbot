@@ -1,383 +1,182 @@
-"""AI Voice Chat for the connected /add userbot account.
-
-Commands:
-    .vctalk on              -> enable for every VC currently joined by this ID
-    .vctalk off             -> disable all VC Talk sessions
-    .vctalk on <chat_id>    -> enable only in that VC (joins it if needed)
-    .vctalk off <chat_id>   -> disable only that VC
-    .vctalk status          -> show status
-
-The connected account from /add is used; no extra STRING_SESSION is required.
-"""
 import asyncio
-import io
 import logging
 import os
 import uuid
-import wave
-from pathlib import Path
+from typing import Optional
 
-import aiohttp
+from gtts import gTTS
 from pyrogram import Client, filters
-from pytgcalls.types import GroupCallConfig
+from pyrogram.types import Message
 
-from config import GROQ_API_KEY, GROQ_MODEL
+from Waste.modules.basic.vcfight import _bridge, _states
+from Waste.modules.basic.aichat import _ask_groq
+from Waste.modules.bot.start import settings_col
 from Waste.modules.help import add_command_help
-from Waste.modules.basic.vcfight import _bridge, _states, _key, _join
 
 log = logging.getLogger(__name__)
-TALK_DIR = Path("vctalk_cache")
-TALK_DIR.mkdir(exist_ok=True)
-
-TTS_VOICE = os.getenv("TTS_VOICE", "hi-IN-SwaraNeural")
-TTS_RATE = os.getenv("TTS_RATE", "-12%")
-TTS_PITCH = os.getenv("TTS_PITCH", "+5Hz")
-
-try:
-    from pytgcalls import filters as call_filters
-    from pytgcalls.types import Direction, Device, StreamFrames, RecordStream
-    from pytgcalls.types.raw import AudioParameters
-    _VC_API_OK = True
-except Exception as exc:  # pragma: no cover - depends on installed py-tgcalls build
-    _VC_API_OK = False
-    call_filters = None
-    Direction = Device = StreamFrames = RecordStream = AudioParameters = None
-    log.warning("VC Talk disabled: incoming PyTgCalls stream API unavailable: %s", exc)
-
-_talk_global = {}
-_talk_enabled = {}          # (client key, chat_id) -> bool
-_talk_buffers = {}          # (client key, chat_id) -> bytearray
-_talk_tasks = {}
-_talk_locks = {}
-_talk_recording = set()
-_talk_busy = set()
-_talk_watchers = {}
+TALK_DIR = "vctalk_audio"
+os.makedirs(TALK_DIR, exist_ok=True)
 
 
-def _owner_key(client):
-    return getattr(client, "_waste_owner_uid", None) or id(client)
+def _talk_map(client):
+    value = getattr(client, "_vctalk_targets", None)
+    if not isinstance(value, set):
+        value = set()
+        setattr(client, "_vctalk_targets", value)
+    return value
 
 
-def _key2(client, chat_id):
-    return (_owner_key(client), int(chat_id))
+def _global_enabled(client) -> bool:
+    return bool(getattr(client, "_vctalk_global", False))
 
 
-def _enabled(client, chat_id):
-    key = _key2(client, chat_id)
-    return bool(_talk_enabled.get(key, False) or _talk_global.get(_owner_key(client), False))
+def _target_enabled(client, chat_id: int) -> bool:
+    return _global_enabled(client) or int(chat_id) in _talk_map(client)
 
 
-def _pcm_to_wav(pcm: bytes) -> bytes:
-    out = io.BytesIO()
-    with wave.open(out, "wb") as wf:
-        wf.setnchannels(2)
-        wf.setsampwidth(2)
-        wf.setframerate(48000)
-        wf.writeframes(pcm)
-    return out.getvalue()
-
-
-async def _transcribe(wav_bytes: bytes):
-    if not GROQ_API_KEY:
-        return ""
-    url = "https://api.groq.com/openai/v1/audio/transcriptions"
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-    form = aiohttp.FormData()
-    form.add_field("file", wav_bytes, filename="vc.wav", content_type="audio/wav")
-    form.add_field("model", "whisper-large-v3-turbo")
-    form.add_field("response_format", "json")
-    timeout = aiohttp.ClientTimeout(total=45)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(url, headers=headers, data=form) as resp:
-            data = await resp.json(content_type=None)
-            if resp.status != 200:
-                log.warning("VC transcription failed: %s", data)
-                return ""
-            return str(data.get("text", "")).strip()
-
-
-async def _ask(text: str):
-    if not GROQ_API_KEY:
-        return ""
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": [
-            {"role": "system", "content": (
-                "You are a friendly natural Telegram voice-chat participant. "
-                "Reply in the same language and tone as the speaker. If they use Hinglish, "
-                "reply in Roman Hinglish. Keep the spoken reply short, natural and conversational; "
-                "usually one sentence, at most two. Do not use lists or fancy Unicode."
-            )},
-            {"role": "user", "content": text[:1500]},
-        ],
-        "temperature": 0.75,
-        "max_tokens": 160,
-    }
-    timeout = aiohttp.ClientTimeout(total=45)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(url, headers=headers, json=payload) as resp:
-            data = await resp.json(content_type=None)
-            if resp.status != 200:
-                log.warning("VC AI failed: %s", data)
-                return ""
-            return str(data.get("choices", [{}])[0].get("message", {}).get("content", "")).strip()
-
-
-async def _tts(text: str):
-    try:
-        import edge_tts
-        path = TALK_DIR / f"reply_{uuid.uuid4().hex}.mp3"
-        communicate = edge_tts.Communicate(
-            text[:700], TTS_VOICE,
-            rate=TTS_RATE,
-            pitch=TTS_PITCH,
-        )
-        await communicate.save(str(path))
-        return str(path)
-    except Exception as exc:
-        log.warning("VC TTS failed: %s", exc)
-        return None
-
-
-def _register_stream_callback(user_client, call):
-    if getattr(call, "_waste_vctalk_registered", False) or not _VC_API_OK:
+def _load_settings(client):
+    uid = getattr(client, "_waste_owner_uid", None)
+    if not uid:
         return
-    decorator = call.on_update(
-        call_filters.stream_frame(Direction.INCOMING, Device.MICROPHONE)
+    try:
+        doc = settings_col.find_one({"_id": int(uid)}) or {}
+        setattr(client, "_vctalk_global", bool(doc.get("vctalk_global", False)))
+        _talk_map(client).update(int(x) for x in doc.get("vctalk_targets", []))
+    except Exception as exc:
+        log.debug("VC Talk settings load failed: %s", type(exc).__name__)
+
+
+def _save_settings(client):
+    uid = getattr(client, "_waste_owner_uid", None)
+    if not uid:
+        return
+    settings_col.update_one(
+        {"_id": int(uid)},
+        {"$set": {
+            "vctalk_global": _global_enabled(client),
+            "vctalk_targets": sorted(_talk_map(client)),
+        }},
+        upsert=True,
     )
 
-    async def _bound_incoming_audio(call_instance, update):
-        await _incoming_audio(user_client, update)
 
-    decorator(_bound_incoming_audio)
-    setattr(call, "_waste_vctalk_registered", True)
-
-
-async def _start_recording(client, chat_id):
-    if not _VC_API_OK:
-        raise RuntimeError("Installed PyTgCalls build has no incoming stream-frame callback API")
-    _, call = await _bridge(client)
-    _register_stream_callback(client, call)
-    key = _key2(client, chat_id)
-    if key in _talk_recording:
-        return
-    params = AudioParameters(bitrate=48000, channels=2)
-    await call.record(int(chat_id), RecordStream(True, params))
-    _talk_recording.add(key)
-    _talk_buffers.setdefault(key, bytearray())
+async def _ensure_settings(client):
+    if not hasattr(client, "_vctalk_loaded"):
+        _load_settings(client)
+        setattr(client, "_vctalk_loaded", True)
 
 
-async def _stop_recording(client, chat_id):
-    key = _key2(client, chat_id)
-    _talk_recording.discard(key)
-    _talk_buffers.pop(key, None)
+async def _speak(client, chat_id: int, text: str):
+    state, call = await _bridge(client)
+    # The connected ID must already be in this VC. .allvc/.join are responsible
+    # for joining; VC Talk only speaks in the connected account's joined calls.
+    if chat_id not in state.joined:
+        return False
+
+    answer = await _ask_groq(text)
+    if not answer or answer.startswith(("⚠️", "⏳")):
+        return False
+
+    path = os.path.join(TALK_DIR, f"{uuid.uuid4().hex}.mp3")
     try:
-        _, call = await _bridge(client)
-        stop = getattr(call, "stop", None)
-        if stop:
-            await stop(int(chat_id))
-    except Exception:
-        pass
-
-
-async def _reply_pipeline(client, chat_id, pcm):
-    key = _key2(client, chat_id)
-    path = None
-    try:
-        text = await _transcribe(_pcm_to_wav(pcm))
-        if not text or len(text.strip()) < 2:
-            return
-        # Ignore obvious command fragments and empty/noise transcripts.
-        if text.strip().startswith((".", "/", "!")):
-            return
-        answer = await _ask(text)
-        if not answer:
-            return
-        path = await _tts(answer)
-        if not path or not _enabled(client, chat_id):
-            return
-        _talk_busy.add(key)
-        _, call = await _bridge(client)
-        await call.play(int(chat_id), path, config=GroupCallConfig(auto_start=False))
-        # Give the recorder time to ignore the bot's own TTS audio.
-        await asyncio.sleep(max(1.0, min(8.0, len(answer) / 8.0)))
+        await asyncio.to_thread(gTTS(text=answer[:1200], lang="en", slow=False).save, path)
+        await call.play(chat_id, path)
+        asyncio.create_task(_cleanup(path, 300))
+        return True
     except Exception as exc:
-        log.warning("VC Talk pipeline failed: %s", type(exc).__name__)
-    finally:
-        _talk_busy.discard(key)
-        if path:
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception:
-                pass
-
-
-async def _incoming_audio(client, update: StreamFrames):
-    chat_id = int(getattr(update, "chat_id", 0) or 0)
-    if not chat_id or not _enabled(client, chat_id):
-        return
-    key = _key2(client, chat_id)
-    if key in _talk_busy:
-        return
-    buf = _talk_buffers.setdefault(key, bytearray())
-    for frame_data in getattr(update, "frames", []) or []:
-        frame = getattr(frame_data, "frame", b"")
-        if frame:
-            buf.extend(frame)
-    # About three seconds of 48 kHz stereo PCM16.
-    if len(buf) < 48000 * 2 * 2 * 3:
-        return
-    pcm = bytes(buf)
-    del buf[:]
-    lock = _talk_locks.setdefault(key, asyncio.Lock())
-    if lock.locked():
-        return
-
-    async def run():
-        async with lock:
-            await _reply_pipeline(client, chat_id, pcm)
-
-    task = asyncio.create_task(run())
-    _talk_tasks[key] = task
-
-
-async def _start_for_joined(client, chat_id):
-    try:
-        await _start_recording(client, int(chat_id))
-        return None
-    except Exception as exc:
-        return f"{type(exc).__name__}: {str(exc)[:120]}"
-
-
-async def _watch_global(client):
-    """Keep global VC Talk attached to every VC the connected ID is already in."""
-    owner = _owner_key(client)
-    await asyncio.sleep(3)
-    while _talk_global.get(owner, False):
+        log.warning("VC Talk playback failed: %s", type(exc).__name__)
         try:
-            state = _states.get(_key(client))
-            joined = list(state.joined) if state else []
-            for chat_id in joined:
-                if not _enabled(client, chat_id):
-                    continue
-                if _key2(client, chat_id) not in _talk_recording:
-                    err = await _start_for_joined(client, chat_id)
-                    if err:
-                        log.debug("VC Talk auto-start %s: %s", chat_id, err)
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            log.debug("VC Talk watcher failed: %s", type(exc).__name__)
-        await asyncio.sleep(15)
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            pass
+        return False
 
 
-def _ensure_global_watcher(client):
-    owner = _owner_key(client)
-    task = _talk_watchers.get(owner)
-    if task and not task.done():
-        return
-    _talk_watchers[owner] = asyncio.create_task(_watch_global(client))
-
-
-async def start_background_for_client(client):
-    """Called after /add session restore; resumes a saved global VC Talk setting."""
+async def _cleanup(path: str, delay: int):
+    await asyncio.sleep(delay)
     try:
-        from Waste.modules.bot.start import settings_col
-        uid = getattr(client, "_waste_owner_uid", None)
-        if not uid:
-            return
-        doc = settings_col.find_one({"_id": int(uid)}) or {}
-        if doc.get("vctalk_global"):
-            _talk_global[_owner_key(client)] = True
-            _ensure_global_watcher(client)
-    except Exception as exc:
-        log.debug("VC Talk background restore skipped: %s", type(exc).__name__)
-
-
-async def _save_global_setting(client, enabled):
-    try:
-        from Waste.modules.bot.start import settings_col
-        uid = getattr(client, "_waste_owner_uid", None)
-        if uid:
-            settings_col.update_one({"_id": int(uid)}, {"$set": {"vctalk_global": bool(enabled)}}, upsert=True)
-    except Exception:
+        if os.path.exists(path):
+            os.remove(path)
+    except OSError:
         pass
 
 
-if _VC_API_OK:
-    @Client.on_message(filters.command("vctalk", [".", "/"]) & filters.me)
-    async def vctalk_command(client, message):
-        args = message.command[1:] if len(message.command) > 1 else []
-        action = args[0].lower() if args else "status"
-        target = None
-        if len(args) > 1 and args[1].lstrip("-").isdigit():
+@Client.on_message(filters.command("vctalk", [".", "/"]) & filters.me)
+async def vctalk_command(client, message: Message):
+    await _ensure_settings(client)
+    args = [x.strip() for x in message.command[1:]]
+    action = args[0].lower() if args else "status"
+    target: Optional[int] = None
+    if len(args) > 1:
+        try:
             target = int(args[1])
+        except ValueError:
+            return await message.reply("❌ Invalid chat ID.")
 
-        if action == "on":
-            if target is None:
-                _talk_global[_owner_key(client)] = True
-                await _save_global_setting(client, True)
-                _ensure_global_watcher(client)
-                state = _states.get(_key(client))
-                joined = list(state.joined) if state else []
-                started = 0
-                for cid in joined:
-                    if await _start_for_joined(client, cid) is None:
-                        started += 1
-                if not joined:
-                    return await message.reply("🟢 **VC Talk ON**\nAb connected ID jis VC mein joined hai, un sab mein AI voice talk active rahega. Naya joined VC bhi automatically cover hoga.")
-                return await message.reply(f"🟢 **VC Talk ON**\nActive VCs: `{started}`\nTargeted use: `.vctalk on <chat_id>`")
+    if action == "on":
+        if target is None:
+            client._vctalk_global = True
+            _save_settings(client)
+            return await message.reply(
+                "🎙️ **VC Talk: ON**\nAI voice replies are enabled for every VC this connected ID joins."
+            )
+        _talk_map(client).add(target)
+        _save_settings(client)
+        return await message.reply(f"🎙️ **VC Talk: ON**\nEnabled only for VC `{target}`.")
 
-            try:
-                await _join(client, target)
-            except Exception as exc:
-                return await message.reply(f"❌ Connected ID could not join this VC: `{type(exc).__name__}`")
-            _talk_enabled[_key2(client, target)] = True
-            err = await _start_for_joined(client, target)
-            if err:
-                _talk_enabled.pop(_key2(client, target), None)
-                return await message.reply(f"❌ VC Talk could not start: `{err}`")
-            return await message.reply(f"🟢 **VC Talk ON**\nOnly VC `{target}` is enabled.")
+    if action == "off":
+        if target is None:
+            client._vctalk_global = False
+            _talk_map(client).clear()
+            _save_settings(client)
+            return await message.reply("🔴 **VC Talk: OFF**\nAI voice conversation disabled.")
+        _talk_map(client).discard(target)
+        _save_settings(client)
+        return await message.reply(f"🔴 **VC Talk: OFF**\nDisabled only for VC `{target}`.")
 
-        if action == "off":
-            if target is None:
-                _talk_global[_owner_key(client)] = False
-                await _save_global_setting(client, False)
-                state = _states.get(_key(client))
-                joined = list(state.joined) if state else []
-                for cid in joined:
-                    _talk_enabled.pop(_key2(client, cid), None)
-                    await _stop_recording(client, cid)
-                task = _talk_watchers.pop(_owner_key(client), None)
-                if task and not task.done():
-                    task.cancel()
-                return await message.reply("🔴 **VC Talk OFF**\nAI voice talk disabled for all VCs.")
+    if action == "status":
+        targets = sorted(_talk_map(client))
+        state = "ON (ALL VCs)" if _global_enabled(client) else ("ON (SELECTED VCs)" if targets else "OFF")
+        extra = "\nTargets: " + ", ".join(map(str, targets)) if targets else ""
+        return await message.reply(f"🎙️ **VC Talk:** {state}{extra}")
 
-            _talk_enabled.pop(_key2(client, target), None)
-            await _stop_recording(client, target)
-            return await message.reply(f"🔴 **VC Talk OFF**\nOnly VC `{target}` disabled.")
-
-        state = _states.get(_key(client))
-        joined = list(state.joined) if state else []
-        active = [str(cid) for cid in joined if _enabled(client, cid)]
-        return await message.reply(
-            f"🎙 **VC Talk:** {'🟢 ON' if (_talk_global.get(_owner_key(client), False) or active) else '🔴 OFF'}\n"
-            f"Active VCs: {', '.join(active) if active else 'none'}\n"
-            f"Use `.vctalk on`, `.vctalk off`, or `.vctalk on <chat_id>`."
-        )
-else:
-    @Client.on_message(filters.command("vctalk", [".", "/"]) & filters.me)
-    async def vctalk_unavailable(client, message):
-        await message.reply("❌ VC Talk needs a PyTgCalls build with incoming stream-frame support. Music/VC join remains available.")
+    return await message.reply(
+        "Usage: `.vctalk on` / `.vctalk off` / `.vctalk status`\n"
+        "Per VC: `.vctalk on <chatid>` / `.vctalk off <chatid>`"
+    )
 
 
-add_command_help("VcTalk", [
-    ["vctalk on", "Enable AI voice conversation in every VC currently joined by the connected ID; newly joined VCs are picked up automatically."],
-    ["vctalk off", "Disable AI voice conversation in all VCs."],
-    ["vctalk on <chat_id>", "Enable AI voice conversation only in the specified VC; the connected ID joins it if necessary."],
-    ["vctalk off <chat_id>", "Disable AI voice conversation only in the specified VC."],
-    ["vctalk status", "Show active VC Talk sessions."],
-])
+@Client.on_message(
+    filters.incoming & filters.group & filters.text & ~filters.me & ~filters.bot
+)
+async def vctalk_text_listener(client, message: Message):
+    await _ensure_settings(client)
+    chat_id = int(message.chat.id)
+    if not _target_enabled(client, chat_id):
+        return
+
+    state = _states.get(id(client))
+    if not state or chat_id not in state.joined:
+        return
+
+    text = (message.text or "").strip()
+    if not text or text.startswith((".", "/", "!")):
+        return
+
+    # Each connected userbot session handles its own joined VC. This prevents
+    # the control bot from speaking in the call and keeps the connected ID as
+    # the actual voice participant.
+    await _speak(client, chat_id, text)
+
+
+add_command_help(
+    "VcTalk",
+    [
+        ["vctalk on", "Enable AI voice replies in every VC joined by the connected ID."],
+        ["vctalk off", "Disable AI voice replies globally."],
+        ["vctalk on <chatid>", "Enable AI voice replies only for one VC/group."],
+        ["vctalk off <chatid>", "Disable AI voice replies for one VC/group."],
+        ["vctalk status", "Show VC Talk status and selected VC IDs."],
+    ],
+)
