@@ -23,6 +23,9 @@ subscriptions_col = db["Subscriptions"]
 settings_col = db["UserSettings"]
 recordings_col = db["UserRecordings"]
 
+def _session_doc(uid):
+    return sessions_col.find_one({"_id": uid})
+
 OWNER_USERNAME = "day1Nomore"
 SUPPORT_USERNAME = "wasteBotz"
 FORCE_SUPPORT = "wasteBotz"
