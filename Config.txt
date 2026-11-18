@@ -13,7 +13,6 @@ OWNER_ID = int(6762113050)
 MONGO_URL = "MONGO_URL"
 BOT_TOKEN = "BOT_TOKEN"
 ALIVE_PIC = 'https://files.catbox.moe/zuufvl.jpg'
-ALIVE_VIDEO = 'https://www.image2url.com/r2/default/videos/1795028137883-50dbfe05-30ea-4fdd-bee6-9918b92c79db.mp4'
 ALIVE_TEXT = None
 PM_LOGGER = None
 LOG_GROUP = None

@@ -1,4 +1,4 @@
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.types import Message
 from Waste.modules.bot.start import settings_col
 from Waste.modules.help import add_command_help
@@ -18,13 +18,13 @@ async def welcome_toggle(client: Client, message: Message):
     uid=_uid(client)
     arg=(message.command[1].lower() if len(message.command)>1 else "status")
     if arg not in {"on","off","status"}:
-        return await message.reply_text("<blockquote>Usage: <code>.welcome on</code> / <code>.welcome off</code></blockquote>", parse_mode="html")
+        return await message.reply_text("<blockquote>Usage: <code>.welcome on</code> / <code>.welcome off</code></blockquote>", parse_mode=enums.ParseMode.HTML)
     if arg=="status":
         state=_enabled(client)
-        return await message.reply_text(f"<blockquote>🏠 Welcome: {'🟢 ON' if state else '🔴 OFF'}</blockquote>", parse_mode="html")
+        return await message.reply_text(f"<blockquote>🏠 Welcome: {'🟢 ON' if state else '🔴 OFF'}</blockquote>", parse_mode=enums.ParseMode.HTML)
     state=arg=="on"
     settings_col.update_one({"_id": uid},{"$set":{"welcome_enabled":state}},upsert=True)
-    await message.reply_text(f"<blockquote>{'🟢 Welcome enabled' if state else '🔴 Welcome disabled'}</blockquote>", parse_mode="html")
+    await message.reply_text(f"<blockquote>{'🟢 Welcome enabled' if state else '🔴 Welcome disabled'}</blockquote>", parse_mode=enums.ParseMode.HTML)
 
 @Client.on_message(filters.new_chat_members)
 async def welcome_new_member(client: Client, message: Message):
@@ -37,7 +37,7 @@ async def welcome_new_member(client: Client, message: Message):
               f"🎉 Glad to have you in <b>{message.chat.title or 'the group'}</b>.\n"
               f"✨ Enjoy your stay!</blockquote>")
         try:
-            await message.reply_text(text, parse_mode="html", disable_web_page_preview=True)
+            await message.reply_text(text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
         except Exception:
             pass
 

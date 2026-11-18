@@ -57,7 +57,7 @@ async def get_authuser_names(chat_id: int) -> List[str]:
 # Broadcast command
 IS_BROADCASTING = False
 
-@app.on_message(filters.command("broadcast") & filters.user(OWNER_ID))
+@app.on_message(filters.command("broadcast", [".", "/"]) & filters.user(OWNER_ID))
 async def broadcast_message(client, message: Message):
     global IS_BROADCASTING
 

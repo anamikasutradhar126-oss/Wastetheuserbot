@@ -101,4 +101,4 @@ logging.basicConfig(
 for _logger_name in ("pyrogram", "pyrogram.client", "pyrogram.dispatcher", "pyrogram.session", "pyrogram.connection"):
    logging.getLogger(_logger_name).setLevel(logging.ERROR)
 
-LOGGER = logging.getLogger("ShashankBot")  
+LOGGER = logging.getLogger("WasteBot")  
