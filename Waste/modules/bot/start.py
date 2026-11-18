@@ -35,6 +35,9 @@ PE_COMMAND = 5992095761561554607
 PE_SUPPORT = 5445284980978621387
 PE_VERIFIED = 5226512880362332956
 
+def _pe(eid, fallback="✦"):
+    return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
+
 # Start-menu buttons are defined here so /start never depends on the legacy
 # Data object, which does not contain the old buttons in this build.
 START_BUTTONS = [
@@ -50,9 +53,6 @@ ABOUT_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emo
 DONATE_TEXT = ABOUT_TEXT
 GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴜsᴇ <code>/add</code> ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ <code>/help</code> ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
 
-def _pe(eid, fallback="✦"):
-    return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
-
 def _started_name(message: Message) -> str:
     user = getattr(message, "from_user", None)
     if not user:
@@ -66,7 +66,7 @@ def _is_userbot_active(uid: int) -> bool:
 def _start_caption(message: Message) -> str:
     uid = getattr(getattr(message, "from_user", None), "id", 0)
     name = _started_name(message)
-    status = "🟢 ACTIVE" if _is_userbot_active(uid) else "❌ INACTIVE"
+    status = "ACTIVE" if _is_userbot_active(uid) else "INACTIVE"
     return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
 {_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
@@ -78,7 +78,7 @@ def _start_caption(message: Message) -> str:
 def _force_caption(message: Message) -> str:
     uid = getattr(getattr(message, "from_user", None), "id", 0)
     name = _started_name(message)
-    status = "🟢 ACTIVE" if _is_userbot_active(uid) else "❌ INACTIVE"
+    status = "ACTIVE" if _is_userbot_active(uid) else "INACTIVE"
     return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
 {_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
