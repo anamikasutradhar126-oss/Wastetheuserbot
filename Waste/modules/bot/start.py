@@ -403,40 +403,12 @@ async def clone(bot: Client, msg: Message):
     except Exception as e:
         await msg.reply(f"**ERROR:** `{e}`")
 
-@app.on_message(filters.regex(r"^[./]add(?:@\w+)?(?:\s+.*)?$", flags=0) & filters.private)
+@app.on_message(filters.command("add") & filters.private)
 async def add_session_command(client: Client, message: Message):
     uid = message.from_user.id
     if _session_doc(uid):
-        return await message.reply(f"{_pe(PE_USER)} ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.", parse_mode=enums.ParseMode.HTML)
-    # A previous expired/failed login must never leave a stale wizard behind.
-    old = user_sessions.pop(uid, None)
-    if old and old.get("client"):
-        try:
-            await old["client"].disconnect()
-        except Exception:
-            pass
-    args = (message.text or "").split(maxsplit=1)
-    if len(args) == 2 and args[1].strip():
-        user_sessions[uid] = {"step": "awaiting_phone"}
-        # Reuse the normal wizard by handling the supplied number below.
-        phone_msg = message
-        phone_text = args[1].strip()
-        if phone_text.startswith("+") and phone_text[1:].isdigit() and 8 <= len(phone_text) <= 16:
-            temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True, device_model="Waste", app_version="1.0")
-            user_sessions[uid].update({"phone": phone_text, "client": temp})
-            try:
-                await temp.connect()
-                sent = await temp.send_code(phone_text)
-                user_sessions[uid]["phone_code_hash"] = sent.phone_code_hash
-                user_sessions[uid]["step"] = "awaiting_otp"
-                return await message.reply(f"{_pe(PE_USER)} ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code>", parse_mode=enums.ParseMode.HTML)
-            except Exception as e:
-                try: await temp.disconnect()
-                except Exception: pass
-                user_sessions.pop(uid, None)
-                return await message.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
-        return await message.reply(f"{_pe(PE_USER)} ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code>", parse_mode=enums.ParseMode.HTML)
-    await message.reply(f"{_pe(PE_USER)} ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (ᴇ.ɢ. <code>+918200000009</code>):", parse_mode=enums.ParseMode.HTML)
+        return await message.reply("⚠️ ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.")
+    await message.reply("📲 ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):")
     user_sessions[uid] = {"step": "awaiting_phone"}
 
 @app.on_message(filters.command("remove", [".", "/"]) & filters.private)
@@ -456,12 +428,7 @@ async def remove_session(client: Client, msg: Message):
 async def session_handler(client: Client, msg: Message):
     if not msg.from_user or not msg.text:
         return
-    # Do not let the catch-all login wizard consume bot commands.
-    # Without this guard, /add itself can be seen again by this handler
-    # immediately after the /add handler sets awaiting_phone, causing
-    # "/add" to be sent to Telegram as if it were a phone number.
-    stripped = msg.text.strip()
-    if stripped.startswith(("/", ".")):
+    if msg.text.strip().startswith(("/", ".")):
         return
     uid = msg.from_user.id
     session = user_sessions.get(uid)
@@ -469,19 +436,17 @@ async def session_handler(client: Client, msg: Message):
         return
     step = session.get("step")
     if step == "awaiting_phone":
-        phone = msg.text.strip().replace(" ", "")
-        if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 8 or len(phone) > 16:
-            return await msg.reply(f"{_pe(PE_USER)} ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code>", parse_mode=enums.ParseMode.HTML)
-        temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True, device_model="Waste", app_version="1.0")
+        phone = msg.text.strip()
+        temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True)
         session.update({"phone": phone, "client": temp})
         try:
             await temp.connect()
             sent = await temp.send_code(phone)
             session["phone_code_hash"] = sent.phone_code_hash
             session["step"] = "awaiting_otp"
-            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code>", parse_mode=enums.ParseMode.HTML)
+            await msg.reply("📨 OTP sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `1 2 3 4 5`")
         except Exception as e:
-            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
+            await msg.reply(f"❌ OTP error: `{e}`\nPlease use /add again.")
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -491,15 +456,9 @@ async def session_handler(client: Client, msg: Message):
             await temp.sign_in(phone_number=session["phone"], phone_code_hash=session["phone_code_hash"], phone_code=msg.text.strip().replace(" ", ""))
         except SessionPasswordNeeded:
             session["step"] = "awaiting_2fa"
-            return await msg.reply(f"{_pe(PE_USER)} sᴇɴᴅ ʏᴏᴜʀ 2ғᴀ ᴘᴀssᴡᴏʀᴅ.", parse_mode=enums.ParseMode.HTML)
-        except (PhoneCodeExpired, PhoneCodeInvalid) as e:
-            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
-            try: await temp.disconnect()
-            except Exception: pass
-            user_sessions.pop(uid, None)
-            return
+            return await msg.reply("🔐 sᴇɴᴅ ʏᴏᴜʀ 2FA ᴘᴀssᴡᴏʀᴅ.")
         except Exception as e:
-            await msg.reply(f"{_pe(PE_USER)} ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
+            await msg.reply(f"❌ Login failed: `{e}`\nPlease use /add again.")
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -511,7 +470,7 @@ async def session_handler(client: Client, msg: Message):
             await temp.check_password(msg.text.strip())
             await finalize_login(temp, msg, uid)
         except Exception as e:
-            await msg.reply(f"{_pe(PE_USER)} ɪɴᴄᴏʀʀᴇᴄᴛ 2ғᴀ ᴘᴀssᴡᴏʀᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
+            await msg.reply(f"❌ Incorrect 2FA password: `{e}`\nPlease use /add again.")
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
