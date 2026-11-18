@@ -9,7 +9,7 @@ from pyrogram.errors import SessionPasswordNeeded, PhoneCodeExpired, PhoneCodeIn
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaVideo
 from pymongo import MongoClient
 
-from config import OWNER_ID, ALIVE_PIC, MONGO_URL
+from config import OWNER_ID, MONGO_URL
 from Waste import app, API_ID, API_HASH
 
 log = logging.getLogger(__name__)
@@ -32,29 +32,26 @@ START_VIDEO_URL = "https://www.image2url.com/r2/default/videos/1795028137883-50d
 # Premium custom-emoji IDs requested for the WASTE X UBOT UI.
 PE_USER = 5471952986970267163
 PE_COMMAND = 5445284980978621387
-PE_SUPPORT = 5445284980978621387
+PE_SUPPORT = 5471952986970267163
 PE_VERIFIED = 5226512880362332956
-PE_PAGE = 5226512880362332956
-PE_MAIN = 5989975649740134220
-PE_NEXT = 5992269308305084799
 
-def _pe(eid, fallback="·"):
+def _pe(eid, fallback="✦"):
     return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
 
 # Start-menu buttons are defined here so /start never depends on the legacy
 # Data object, which does not contain the old buttons in this build.
 START_BUTTONS = [
     [InlineKeyboardButton("𝙗𝙖𝙨𝙞𝙘 𝙜𝙪𝙞𝙙𝙚", callback_data="guide")],
-    [InlineKeyboardButton("𝙬𝙖𝙨𝙩𝙚 ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("𝙖𝙗𝙤𝙪𝙩", callback_data="about")],
+    [InlineKeyboardButton("𝙬𝙖𝙨𝙩𝙚", url="https://t.me/wasteBotz"), InlineKeyboardButton("𝙖𝙗𝙤𝙪𝙩", callback_data="about")],
     [InlineKeyboardButton("𝙝𝙚𝙡𝙥", callback_data="help"), InlineKeyboardButton("𝙢𝙪𝙨𝙞𝙘", callback_data="botforce:cmd:Music")],
-    [InlineKeyboardButton("𝙪𝙥𝙙𝙖𝙩𝙚𝙨 ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("𝙨𝙪𝙥𝙥𝙤𝙧𝙩 ↗", url="https://t.me/wasteBotz")],
+    [InlineKeyboardButton("𝙪𝙥𝙙𝙖𝙩𝙚𝙨", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("𝙨𝙪𝙥𝙥𝙤𝙧𝙩", url="https://t.me/wasteBotz")],
 ]
 
 HOME_BUTTONS = START_BUTTONS
 
-ABOUT_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴘᴏᴡᴇʀғᴜʟ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀʙᴏᴛ ᴡɪᴛʜ ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ, ᴜᴛɪʟɪᴛɪᴇs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ.</b></blockquote>"
+ABOUT_TEXT = "<blockquote>" + _pe(PE_USER) + " <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ</b>\n" + _pe(PE_USER) + " <b>𝙥𝙤𝙬𝙚𝙧𝙛𝙪𝙡 𝙩𝙚𝙡𝙚𝙜𝙧𝙖𝙢 𝙪𝙨𝙚𝙧𝙗𝙤𝙩 𝙬𝙞𝙩𝙝 𝙢𝙪𝙨𝙞𝙘, 𝙫𝙘𝙛𝙞𝙜𝙝𝙩, 𝙪𝙩𝙞𝙡𝙞𝙩𝙞𝙚𝙨 𝙖𝙣𝙙 𝙖𝙪𝙩𝙤𝙢𝙖𝙩𝙞𝙤𝙣.</b></blockquote>"
 DONATE_TEXT = ABOUT_TEXT
-GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴜsᴇ <code>/add</code> ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ <code>/help</code> ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
+GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴜsᴇ <code>/add</code> ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ <code>/help</code> ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
 
 def _started_name(message: Message) -> str:
     user = getattr(message, "from_user", None)
@@ -71,10 +68,8 @@ def _start_caption(message: Message) -> str:
     name = _started_name(message)
     status = "ᴀᴄᴛɪᴠᴇ" if _is_userbot_active(uid) else "ɪɴᴀᴄᴛɪᴠᴇ"
     return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
-
 {_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
 {_pe(PE_USER)} <b>ꜱᴛᴀᴛᴜꜱ : {status}</b>
-
 {_pe(PE_USER)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b></blockquote>"""
 
 
@@ -82,13 +77,10 @@ def _force_caption(message: Message) -> str:
     uid = getattr(getattr(message, "from_user", None), "id", 0)
     name = _started_name(message)
     status = "ᴀᴄᴛɪᴠᴇ" if _is_userbot_active(uid) else "ɪɴᴀᴄᴛɪᴠᴇ"
-    return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
-
+    return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒ᴛ</b>
 {_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
 {_pe(PE_USER)} <b>ꜱᴛᴀᴛᴜꜱ : {status}</b>
-
 {_pe(PE_USER)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
-
 {_pe(PE_SUPPORT)} <b>ᴊᴏɪɴ ʙᴏᴛʜ ᴏғғɪᴄɪᴀʟ ᴄʜᴀɴɴᴇʟs ᴛᴏ ᴜɴʟᴏᴄᴋ ᴀᴄᴄᴇss.</b>
 {_pe(PE_VERIFIED)} <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴠᴇʀɪғɪᴇᴅ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
 
@@ -110,8 +102,8 @@ async def _force_joined(client: Client, user_id: int) -> bool:
 
 def _force_markup():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("𝙨𝙪𝙥𝙥𝙤𝙧𝙩 ↗", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("𝙪𝙥𝙙𝙖𝙩𝙚𝙨 ↗", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("𝙨𝙪𝙥𝙥𝙤𝙧𝙩", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("𝙪𝙥𝙙𝙖𝙩𝙚𝙨", url="https://t.me/wasteuserbotUpdates")],
         [InlineKeyboardButton("𝙫𝙚𝙧𝙞𝙛𝙞𝙚𝙙", callback_data="start_force_check")],
     ])
 
@@ -133,7 +125,7 @@ async def start_handler(client: Client, message: Message):
     await _send_start_or_force(client, message)
 
 
-BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5471952986970267163">·</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
+BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
 
 FORCE_COMMANDS = [
     "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone",
@@ -149,10 +141,10 @@ def _bot_force_page_text(page):
     chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
     chunk = chunks[max(0, min(int(page), total - 1))]
     # Only the requested header and command list are shown.
-    lines = ['<blockquote><tg-emoji emoji-id="5471952986970267163">·</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>', '']
+    lines = ['<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>', '']
     for name in chunk:
-        lines.append(f'<tg-emoji emoji-id="{PE_COMMAND}">·</tg-emoji> <b>{_ser_name(name)}</b>')
-    lines.append(f'<tg-emoji emoji-id="{PE_PAGE}">·</tg-emoji> <b>ᴘᴀɢᴇ {int(page)+1}/6</b>')
+        lines.append(f'<tg-emoji emoji-id="5445284980978621387">✦</tg-emoji> <b>{_ser_name(name)}</b>')
+    lines.append(f'<tg-emoji emoji-id="5226512880362332956">✦</tg-emoji> <b>ᴘᴀɢᴇ {int(page)+1}/6</b>')
     lines.append('</blockquote>')
     return '\n'.join(lines)
 
@@ -160,9 +152,11 @@ def _ser_name(name):
     # Mathematical Sans Bold Italic style requested for command labels.
     mapping = str.maketrans({
         'a':'𝙖','b':'𝙗','c':'𝙘','d':'𝙙','e':'𝙚','f':'𝙛','g':'𝙜','h':'𝙝','i':'𝙞','j':'𝙟','k':'𝙠','l':'𝙡','m':'𝙢',
-        'n':'𝙣','o':'𝙤','p':'𝙥','q':'𝙦','r':'𝙧','s':'𝙨','t':'𝙩','u':'𝙪','v':'𝙫','w':'𝙬','x':'𝙭','y':'𝙮','z':'𝙯'
+        'n':'𝙣','o':'𝙤','p':'𝙥','q':'𝙦','r':'𝙧','s':'𝙨','t':'𝙩','u':'𝙪','v':'𝙫','w':'𝙬','x':'𝙭','y':'𝙮','z':'𝙯',
+        'A':'𝙰','B':'𝙱','C':'𝙲','D':'𝙳','E':'𝙴','F':'𝙵','G':'𝙶','H':'𝙷','I':'𝙸','J':'𝙹','K':'𝙺','L':'𝙻','M':'𝙼',
+        'N':'𝙽','O':'𝙾','P':'𝙿','Q':'𝚀','R':'𝚁','S':'𝚂','T':'𝚃','U':'𝚄','V':'𝚅','W':'𝚆','X':'𝚇','Y':'𝚈','Z':'𝚉'
     })
-    return str(name).translate(mapping)
+    return str(name).lower().translate(mapping)
 
 def _bot_force_keyboard(page=0):
     page = max(0, min(int(page), 5))
@@ -176,8 +170,8 @@ def _bot_force_keyboard(page=0):
         rows.append(row)
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton("𝙗𝙖𝙘𝙠", callback_data=f"botforce:page:{page-1}"))
-    nav.append(InlineKeyboardButton(f"𝙥𝙖𝙜𝙚 {page+1}/6", callback_data="botforce:noop"))
+        nav.append(InlineKeyboardButton("𝙥𝙧𝙚𝙫", callback_data=f"botforce:page:{page-1}"))
+    nav.append(InlineKeyboardButton(f"ᴘᴀɢᴇ {page+1}/6", callback_data="botforce:noop"))
     if page < 5:
         nav.append(InlineKeyboardButton("𝙣𝙚𝙭𝙩", callback_data=f"botforce:page:{page+1}"))
     rows.append(nav)
@@ -212,7 +206,7 @@ async def bot_force_callback(client: Client, query: CallbackQuery):
         try:
             return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
         except Exception:
-            return await query.message.edit_text(_bot_force_page_text(0), reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
     if data.startswith("page:"):
         page = int(data.split(":", 1)[1])
         try:
@@ -242,7 +236,7 @@ async def start_force_check(client: Client, query: CallbackQuery):
     try:
         await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
     except Exception:
-        await query.message.edit_text(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
+        await query.message.edit_caption(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
@@ -256,18 +250,24 @@ async def callback_handler(client: Client, query: CallbackQuery):
         try:
             await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
         except Exception:
-            await query.message.edit_text(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
+            await query.message.edit_caption(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
     elif data in {"help", "force_menu"}:
         try:
             await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
         except Exception:
             await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
     elif data == "about":
-        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=ABOUT_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(HOME_BUTTONS))
+        try:
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=ABOUT_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(HOME_BUTTONS))
+        except Exception:
+            await query.message.edit_caption(ABOUT_TEXT, reply_markup=InlineKeyboardMarkup(HOME_BUTTONS), parse_mode=enums.ParseMode.HTML)
     elif data == "donate":
         await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=DONATE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
     elif data == "guide":
-        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=GUIDE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+        try:
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=GUIDE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+        except Exception:
+            await query.message.edit_caption(GUIDE_TEXT, reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
 
 @app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
 async def group_play_command(client: Client, message: Message):
@@ -328,7 +328,7 @@ async def subscription_cmd(client: Client, message: Message):
         return await message.reply_text("Usage: /subscription <user_id> [username]")
     uid, username = _parse_target(message.command[1:])
     if uid is None:
-        return await message.reply_text(f"{_pe(PE_COMMAND)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b> ᴇxᴀᴍᴘʟᴇ: <code>/subscription 123456789 username</code>", parse_mode="html")
+        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b> ᴇxᴀᴍᴘʟᴇ: /subscription 123456789 username")
     expires = datetime.now(timezone.utc) + timedelta(days=30)
     subscriptions_col.update_one({"_id": uid}, {"$set": {"user_id": uid, "username": username or "", "expires_at": expires, "activated_at": datetime.now(timezone.utc)}}, upsert=True)
     # Restart premium background features immediately if this account is online.
@@ -346,10 +346,10 @@ async def subscription_cmd(client: Client, message: Message):
             except Exception as exc:
                 log.warning("Could not refresh promotion state for %s: %s", uid, exc)
     try:
-        await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\nᴛʜᴇ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ɪs ᴀᴄᴛɪᴠᴇ ғᴏʀ <b>30 ᴅᴀʏs</b>.", parse_mode="html")
+        await client.send_message(uid, f"{_pe(PE_USER)} **Subscription Activated**\n\nYour Promotion subscription is active for **30 days**.")
     except Exception as exc:
         log.warning("Could not notify subscriber %s: %s", uid, exc)
-    await message.reply_text(f"{_pe(PE_COMMAND)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀᴄᴛɪᴠᴀᴛᴇᴅ</b> ғᴏʀ <code>{uid}</code> ғᴏʀ 30 ᴅᴀʏs.\nᴇxᴘɪʀᴇs: <code>{expires.isoformat()}</code>", parse_mode="html")
+    await message.reply_text(f"{_pe(PE_USER)} Subscription activated for `{uid}` for 30 days.\n{_pe(PE_USER)} Expires: `{expires.isoformat()}`")
 
 @app.on_message(filters.command("disubscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def disubscription_cmd(client: Client, message: Message):
@@ -357,7 +357,7 @@ async def disubscription_cmd(client: Client, message: Message):
         return await message.reply_text("Usage: /disubscription <user_id> [username]")
     uid, username = _parse_target(message.command[1:])
     if uid is None:
-        return await message.reply_text(f"{_pe(PE_COMMAND)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b>", parse_mode="html")
+        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b>")
     result = subscriptions_col.delete_one({"_id": uid})
     settings_col.update_one({"_id": uid}, {"$set": {"allvc_auto": False, "autotextpromo": False}}, upsert=True)
     for hosted in list(active_sessions):
@@ -374,10 +374,10 @@ async def disubscription_cmd(client: Client, message: Message):
             except Exception as exc:
                 log.warning("Could not disable promotion mode for %s: %s", uid, exc)
     try:
-        await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴅᴇᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\nʏᴏᴜʀ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʜᴀs ᴇɴᴅᴇᴅ. ᴄᴏɴᴛᴀᴄᴛ @day1Nomore ᴛᴏ ʀᴇᴀᴄᴛɪᴠᴀᴛᴇ ɪᴛ.", parse_mode="html")
+        await client.send_message(uid, f"{_pe(PE_USER)} **Subscription Deactivated**\n\nYour Promotion subscription has ended. Contact @day1Nomore to reactivate it.")
     except Exception as exc:
         log.warning("Could not notify unsubscribed user %s: %s", uid, exc)
-    await message.reply_text(f"{_pe(PE_COMMAND)} <b>{"sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ." if result.deleted_count else "ɴᴏ ᴀᴄᴛɪᴠᴇ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ғᴏᴜɴᴅ."}</b>", parse_mode="html")
+    await message.reply_text(f"{_pe(PE_USER)} Subscription removed." if result.deleted_count else f"{_pe(PE_USER)} No active subscription found.")
 
 @app.on_message(filters.command("clone", [".", "/"]) & filters.private)
 async def clone(bot: Client, msg: Message):
@@ -399,7 +399,7 @@ async def clone(bot: Client, msg: Message):
             await start_autotextpromo_if_enabled(client)
         except Exception as exc:
             log.warning("Clone background start failed: %s", exc)
-        await msg.reply(f"{_pe(PE_USER)} <b>ɴᴏᴡ ʏᴏᴜ ᴀʀᴇ ʀᴇᴀᴅʏ ᴛᴏ ғɪɢʜᴛ</b>\n\n{_pe(PE_USER)} <b>ᴀᴄᴄᴏᴜɴᴛ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ</b>\n\n{_pe(PE_USER)} <b>{escape(user.first_name)}</b>", parse_mode="html")
+        await msg.reply(f"{_pe(PE_USER)} ɴᴏᴡ ʏᴏᴜ ᴀʀᴇ ʀᴇᴀᴅʏ ᴛᴏ ғɪɢʜᴛ\n\n{_pe(PE_USER)} ᴀᴄᴄᴏᴜɴᴛ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ\n\n{_pe(PE_USER)} {escape(str(user.first_name))}")
     except Exception as e:
         await msg.reply(f"**ERROR:** `{e}`")
 
