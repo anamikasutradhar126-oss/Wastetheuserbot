@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from html import escape
 
 from pyrogram import Client, filters, enums
 from pyrogram.errors import SessionPasswordNeeded, PhoneCodeExpired, PhoneCodeInvalid
@@ -28,125 +29,62 @@ FORCE_SUPPORT = "wasteBotz"
 FORCE_UPDATES = "wasteuserbotUpdates"
 START_VIDEO_URL = "https://www.image2url.com/r2/default/videos/1794758121681-9a91954b-c9c6-4323-9fd0-9bf9e42ed0fa.mp4"
 
+# Premium custom-emoji IDs requested for the WASTE X UBOT UI.
+PE_USER = 5471952986970267163
+PE_COMMAND = 5992095761561554607
+PE_SUPPORT = 5445284980978621387
+PE_VERIFIED = 5226512880362332956
 
-class Data:
-    # Telegram inline buttons cannot carry custom-emoji entities, so the button labels
-    # use the requested small-caps style while message captions use the premium IDs.
-    donate_button = [InlineKeyboardButton("ᴅᴏɴᴀᴛᴇ", callback_data="donate")]
-    generate_single_button = [InlineKeyboardButton("ʙᴀsɪᴄ ɢᴜɪᴅᴇ", callback_data="guide")]
-    home_buttons = [generate_single_button, [InlineKeyboardButton("ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ", callback_data="home")]]
-    back_buttons = [donate_button, [InlineKeyboardButton("ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ", callback_data="home")]]
-    guide_buttons = [[InlineKeyboardButton("ʀᴇᴛᴜʀɴ ʜᴏᴍᴇ", callback_data="home")]]
-    buttons = [
-        generate_single_button,
-        [InlineKeyboardButton("ᴡᴀsᴛᴇ", url=f"https://t.me/{OWNER_USERNAME}"), InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data="about")],
-        [InlineKeyboardButton("ʜᴇʟᴘ", callback_data="force_menu"), InlineKeyboardButton("ᴍᴜsɪᴄ", callback_data="botforce:music")],
-        [InlineKeyboardButton("ᴜᴘᴅᴀᴛᴇs", url=f"https://t.me/{FORCE_UPDATES}"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url=f"https://t.me/{FORCE_SUPPORT}")],
-    ]
-    START = """<blockquote><tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
+def _pe(eid, fallback="✦"):
+    return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
 
-<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>👤 ᴜꜱᴇʀ : 𝐉 𝐏 𝐄 𝐗 𝐎 🚩</b>
-<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>💎 ꜱᴛᴀᴛᴜꜱ : ❌ ɪɴᴀᴄᴛɪᴠᴇ</b>
+def _started_name(message: Message) -> str:
+    user = getattr(message, "from_user", None)
+    if not user:
+        return "User"
+    name = getattr(user, "first_name", None) or getattr(user, "username", None) or "User"
+    return escape(str(name))
 
-<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>🚀 ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
-</blockquote>"""
-    HELP = """<blockquote><tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ʜᴇʟᴘ ᴍᴇɴᴜ</b></blockquote>"""
-    GUIDE = """<blockquote><tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ʙᴀsɪᴄ ɢᴜɪᴅᴇ</b>
+def _is_userbot_active(uid: int) -> bool:
+    return any(getattr(c, "_waste_owner_uid", None) == uid for c in active_sessions)
 
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>1. /add</b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>2. ᴇɴᴛᴇʀ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ</b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>3. ᴇɴᴛᴇʀ ᴛʜᴇ ᴏᴛᴘ ᴀɴᴅ 2ғᴀ ᴘᴀssᴡᴏʀᴅ ɪғ ʀᴇǫᴜɪʀᴇᴅ</b>
+def _start_caption(message: Message) -> str:
+    uid = getattr(getattr(message, "from_user", None), "id", 0)
+    name = _started_name(message)
+    status = "🟢 ACTIVE" if _is_userbot_active(uid) else "❌ INACTIVE"
+    return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ ᴡɪʟʟ ʙᴇ ʜᴏsᴛᴇᴅ ᴀғᴛᴇʀ ʟᴏɢɪɴ.</b></blockquote>"""
-    ABOUT = """<blockquote><tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴀʙᴏᴜᴛ ᴛʜɪs ʙᴏᴛ</b>
+{_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
+{_pe(PE_USER)} <b>ꜱᴛᴀᴛᴜꜱ : {status}</b>
 
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ᴛᴏ ʜᴏsᴛ ᴀ ᴘᴇʀsᴏɴᴀʟ ᴜsᴇʀʙᴏᴛ ᴡɪᴛʜ ᴍᴜʟᴛɪᴘʟᴇ ᴘʟᴜɢɪɴs.</b>
-
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴘᴏᴡᴇʀᴇᴅ ʙʏ : <a href="https://t.me/wasteBotz">ᴡᴀsᴛᴇ ꭙ ʙᴏᴛs</a></b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href="https://t.me/day1Nomore">ᴡᴀsᴛᴇ</a></b></blockquote>"""
-    DONATE = """<blockquote><tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴅᴏɴᴀᴛᴇ / sᴜᴘᴘᴏʀᴛ</b>
-
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴜᴘɪ ɪᴅ »</b> <code>JOYZZ@FAM</code>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴄᴏɴᴛᴀᴄᴛ » <a href="https://t.me/day1Nomore">ᴏᴡɴᴇʀ</a></b></blockquote>"""
+{_pe(PE_USER)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b></blockquote>"""
 
 
-def _session_doc(uid):
-    return sessions_col.find_one({"_id": uid})
+def _force_caption(message: Message) -> str:
+    uid = getattr(getattr(message, "from_user", None), "id", 0)
+    name = _started_name(message)
+    status = "🟢 ACTIVE" if _is_userbot_active(uid) else "❌ INACTIVE"
+    return f"""<blockquote>{_pe(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
+{_pe(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
+{_pe(PE_USER)} <b>ꜱᴛᴀᴛᴜꜱ : {status}</b>
 
-def _is_owner(message):
-    return bool(message.from_user and message.from_user.id == OWNER_ID)
+{_pe(PE_USER)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
 
-
-def _parse_target(parts):
-    user_id = None
-    username = None
-    for part in parts:
-        p = part.strip().lstrip("@")
-        if p.lstrip("-").isdigit() and user_id is None:
-            user_id = int(p)
-        elif p and username is None:
-            username = p
-    return user_id, username
-
-
-def _sub_active(uid):
-    doc = subscriptions_col.find_one({"_id": int(uid)})
-    if not doc:
-        return False, None
-    expires = doc.get("expires_at")
-    if isinstance(expires, datetime):
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=timezone.utc)
-        if expires > datetime.now(timezone.utc):
-            return True, expires
-        subscriptions_col.delete_one({"_id": int(uid)})
-    return False, None
-
-
-async def _force_joined(client: Client, user_id: int) -> bool:
-    for channel in (f"@{FORCE_SUPPORT}", f"@{FORCE_UPDATES}"):
-        try:
-            member = await client.get_chat_member(channel, user_id)
-            status = getattr(member.status, "value", member.status)
-            if status in {"left", "kicked", "banned"}:
-                return False
-        except Exception:
-            # Force-join must fail closed: if membership cannot be verified,
-            # do not bypass the gate.
-            return False
-    return True
-
-
-def _force_markup():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛡️ ᴅᴇᴘʟᴏʏ", url=f"https://t.me/{FORCE_SUPPORT}")],
-        [InlineKeyboardButton("📢 ᴅᴇᴘʟᴏʏ", url=f"https://t.me/{FORCE_UPDATES}")],
-        [InlineKeyboardButton("ᴅᴇᴘʟᴏʏ", callback_data="start_force_check")],
-    ])
-
-
-FORCE_CAPTION = """<blockquote><tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
-
-<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>ᴜꜱᴇʀ : 𝐉 𝐏 𝐄 𝐗 𝐎 🚩</b>
-<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>ꜱᴛᴀᴛᴜꜱ : ❌ ɪɴᴀᴄᴛɪᴠᴇ</b>
-
-<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
-
-<tg-emoji emoji-id="5445284980978621387">✦</tg-emoji> <b>ᴊᴏɪɴ ʙᴏᴛʜ ᴏғғɪᴄɪᴀʟ ᴄʜᴀɴɴᴇʟs ᴛᴏ ᴜɴʟᴏᴄᴋ ᴀᴄᴄᴇss.</b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴅᴇᴘʟᴏʏ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
+{_pe(PE_SUPPORT)} <b>ᴊᴏɪɴ ʙᴏᴛʜ ᴏғғɪᴄɪᴀʟ ᴄʜᴀɴɴᴇʟs ᴛᴏ ᴜɴʟᴏᴄᴋ ᴀᴄᴄᴇss.</b>
+{_pe(PE_VERIFIED)} <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴠᴇʀɪғɪᴇᴅ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
 
 
 async def _send_start_or_force(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         try:
-            return await client.send_video(message.chat.id, START_VIDEO_URL, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+            return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
         except Exception:
-            return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
+            return await client.send_photo(message.chat.id, ALIVE_PIC, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
     try:
-        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_start_caption(message), reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
     except Exception:
-        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=Data.START, reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML)
+        return await client.send_photo(message.chat.id, ALIVE_PIC, caption=_start_caption(message), reply_markup=InlineKeyboardMarkup(Data.buttons), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command("start", [".", "/"]) & filters.private)
@@ -154,12 +92,12 @@ async def start_handler(client: Client, message: Message):
     await _send_start_or_force(client, message)
 
 
-BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>
+BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>
 
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ / ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.</b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.</b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.</b>
-<tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ᴜsᴇ .ʜᴇʟᴘ &lt;ᴄᴏᴍᴍᴀɴᴅ&gt; ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</b></blockquote>"""
+<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ / ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.</b>
+<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.</b>
+<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.</b>
+<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴜsᴇ .ʜᴇʟᴘ &lt;ᴄᴏᴍᴍᴀɴᴅ&gt; ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</b></blockquote>"""
 
 
 FORCE_COMMANDS = [
@@ -177,13 +115,13 @@ def _bot_force_page_text(page):
     chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
     chunk = chunks[max(0, min(int(page), total - 1))]
     lines = [
-        '<blockquote><tg-emoji emoji-id="5992130701120507687">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>',
+        '<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>',
         '',
         f'<tg-emoji emoji-id="5226512880362332956">✦</tg-emoji> <b>ᴘᴀɢᴇ {page+1}/6</b>',
         ''
     ]
     for name in chunk:
-        lines.append(f'<tg-emoji emoji-id="5989952280823076303">✦</tg-emoji> <b>{name}</b>')
+        lines.append(f'<tg-emoji emoji-id="5992095761561554607">✦</tg-emoji> <b>{name}</b>')
     lines.append('</blockquote>')
     return '\n'.join(lines)
 
@@ -217,9 +155,9 @@ def _bot_force_media_kwargs():
 async def force_handler(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
         try:
-            return await client.send_video(message.chat.id, START_VIDEO_URL, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+            return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
         except Exception:
-            return await client.send_photo(message.chat.id, ALIVE_PIC, caption=FORCE_CAPTION, reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
+            return await client.send_photo(message.chat.id, ALIVE_PIC, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
     try:
         return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_bot_force_page_text(0), reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
     except Exception:
@@ -263,7 +201,7 @@ async def start_force_check(client: Client, query: CallbackQuery):
         await query.answer("Please join both channels first.", show_alert=True)
         return
     await query.answer("Joined successfully ✓")
-    await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=Data.START, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
+    await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
@@ -275,9 +213,9 @@ async def callback_handler(client: Client, query: CallbackQuery):
     data = query.data
     if data == "home":
         try:
-            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=Data.START, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(Data.buttons))
         except Exception:
-            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=Data.START, parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
+            await query.message.edit_media(InputMediaPhoto(ALIVE_PIC, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(Data.buttons))
     elif data in {"help", "force_menu"}:
         try:
             await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))

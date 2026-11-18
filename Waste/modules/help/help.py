@@ -1,53 +1,58 @@
 from pyrogram import Client, filters, enums
+from html import escape
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from Waste import app, CMD_HELP, SUDO_USER
 from config import ALIVE_PIC
 
 FORCE_VIDEO_URL = "https://www.image2url.com/r2/default/videos/1794758121681-9a91954b-c9c6-4323-9fd0-9bf9e42ed0fa.mp4"
 PE = lambda eid, fallback="✦": f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
+PE_USER = 5471952986970267163
+PE_COMMAND = 5992095761561554607
+PE_SUPPORT = 5445284980978621387
+PE_VERIFIED = 5226512880362332956
 
-HELP_MENU = r"""<blockquote>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯＴ - ＨＥＬＰ ＭＥＮＵ ❁ |
-+-----------------------+------------------------+
-| Autopic               | admin                  |
-| afk                   | animation              |
-| anime_cf              | antipm                 |
-| autoscroll            | banall                 |
-| birthday              | broadcast              |
-| carbon                | clone                  |
-| create                | destruct               |
-| dictionary            | dmspam                 |
-| emoji                 | flirt                  |
-| globals               | google                 |
-| info                  | invite                 |
-| joinleave             | locks                  |
-| memify                | mention                |
-| metrics               | paste                  |
-| pats                  | ping                   |
-| profile               | purge                  |
-| quotly                | raid                   |
-| replyraid             | restart                |
-| sangmata              | screenshot             |
-| spam                  | start                  |
-| stats                 | sticker                |
-| stickers              | sudos                  |
-| tag                   | tagalert               |
-| tagall                | text                   |
-| tiny                  | translate              |
-| truth-dare            | update                 |
-| upload                | vctools                |
-| vulgar                | waifu                  |
-| weather               | VcFight                |
-| promotion             | aichat                 |
-| Music                 | AutoTextPromo          |
-+-----------------------+------------------------+
-• @wasteuserbotUpdates × @wasteBotz .</blockquote>"""
+HELP_MENU = f"""<blockquote>{PE(PE_USER)} <b>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯＴ - ʜᴇʟᴘ ᴍᴇɴᴜ ❁ |</b>
 
-FORCE_TEXT = f"""<blockquote>{PE(5992130701120507687)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>
+{PE(PE_COMMAND)} <b>Autopic</b>  {PE(PE_COMMAND)} <b>admin</b>
+{PE(PE_COMMAND)} <b>afk</b>  {PE(PE_COMMAND)} <b>animation</b>
+{PE(PE_COMMAND)} <b>anime_cf</b>  {PE(PE_COMMAND)} <b>antipm</b>
+{PE(PE_COMMAND)} <b>autoscroll</b>  {PE(PE_COMMAND)} <b>banall</b>
+{PE(PE_COMMAND)} <b>birthday</b>  {PE(PE_COMMAND)} <b>broadcast</b>
+{PE(PE_COMMAND)} <b>carbon</b>  {PE(PE_COMMAND)} <b>clone</b>
+{PE(PE_COMMAND)} <b>create</b>  {PE(PE_COMMAND)} <b>destruct</b>
+{PE(PE_COMMAND)} <b>dictionary</b>  {PE(PE_COMMAND)} <b>dmspam</b>
+{PE(PE_COMMAND)} <b>emoji</b>  {PE(PE_COMMAND)} <b>flirt</b>
+{PE(PE_COMMAND)} <b>globals</b>  {PE(PE_COMMAND)} <b>google</b>
+{PE(PE_COMMAND)} <b>info</b>  {PE(PE_COMMAND)} <b>invite</b>
+{PE(PE_COMMAND)} <b>joinleave</b>  {PE(PE_COMMAND)} <b>locks</b>
+{PE(PE_COMMAND)} <b>memify</b>  {PE(PE_COMMAND)} <b>mention</b>
+{PE(PE_COMMAND)} <b>metrics</b>  {PE(PE_COMMAND)} <b>paste</b>
+{PE(PE_COMMAND)} <b>pats</b>  {PE(PE_COMMAND)} <b>ping</b>
+{PE(PE_COMMAND)} <b>profile</b>  {PE(PE_COMMAND)} <b>purge</b>
+{PE(PE_COMMAND)} <b>quotly</b>  {PE(PE_COMMAND)} <b>raid</b>
+{PE(PE_COMMAND)} <b>replyraid</b>  {PE(PE_COMMAND)} <b>restart</b>
+{PE(PE_COMMAND)} <b>sangmata</b>  {PE(PE_COMMAND)} <b>screenshot</b>
+{PE(PE_COMMAND)} <b>spam</b>  {PE(PE_COMMAND)} <b>start</b>
+{PE(PE_COMMAND)} <b>stats</b>  {PE(PE_COMMAND)} <b>sticker</b>
+{PE(PE_COMMAND)} <b>stickers</b>  {PE(PE_COMMAND)} <b>sudos</b>
+{PE(PE_COMMAND)} <b>tag</b>  {PE(PE_COMMAND)} <b>tagalert</b>
+{PE(PE_COMMAND)} <b>tagall</b>  {PE(PE_COMMAND)} <b>text</b>
+{PE(PE_COMMAND)} <b>tiny</b>  {PE(PE_COMMAND)} <b>translate</b>
+{PE(PE_COMMAND)} <b>truth-dare</b>  {PE(PE_COMMAND)} <b>update</b>
+{PE(PE_COMMAND)} <b>upload</b>  {PE(PE_COMMAND)} <b>vctools</b>
+{PE(PE_COMMAND)} <b>vulgar</b>  {PE(PE_COMMAND)} <b>waifu</b>
+{PE(PE_COMMAND)} <b>weather</b>  {PE(PE_COMMAND)} <b>VcFight</b>
+{PE(PE_COMMAND)} <b>promotion</b>  {PE(PE_COMMAND)} <b>aichat</b>
+{PE(PE_COMMAND)} <b>Music</b>  {PE(PE_COMMAND)} <b>AutoTextPromo</b>
 
-{PE(5992130701120507687)} <b>ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ / ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.</b>
-{PE(5992130701120507687)} <b>ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.</b>
-{PE(5992130701120507687)} <b>ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.</b>
-{PE(5992130701120507687)} <b>ᴜsᴇ .ʜᴇʟᴘ &lt;ᴄᴏᴍᴍᴀɴᴅ&gt; ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</b></blockquote>"""
+{PE(PE_SUPPORT)} <b>@wasteBotz</b>  ×  <b>@wasteuserbotUpdates</b></blockquote>"""
+
+FORCE_TEXT = f"""<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>
+
+{PE(PE_COMMAND)} <b>ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ / ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.</b>
+{PE(PE_COMMAND)} <b>ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.</b>
+{PE(PE_COMMAND)} <b>ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.</b>
+{PE(PE_COMMAND)} <b>ᴜsᴇ .ʜᴇʟᴘ &lt;ᴄᴏᴍᴍᴀɴᴅ&gt; ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</b></blockquote>"""
 
 FORCE_CHANNELS = [
     ("wasteBotz", "🛡️ SUPPORT CHANNEL"),
@@ -67,8 +72,8 @@ FORCE_COMMANDS = [
 def _force_page_text(page=0):
     page = max(0, min(int(page), 5))
     chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
-    lines = [f"<blockquote>{PE(5992130701120507687)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>", "", f"{PE(5226512880362332956)} <b>ᴘᴀɢᴇ {page+1}/6</b>", ""]
-    lines.extend(f"{PE(5989952280823076303)} <b>{name}</b>" for name in chunks[page])
+    lines = [f"<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>", "", f"{PE(5226512880362332956)} <b>ᴘᴀɢᴇ {page+1}/6</b>", ""]
+    lines.extend(f"{PE(PE_COMMAND)} <b>{name}</b>" for name in chunks[page])
     lines.append("</blockquote>")
     return "\n".join(lines)
 
@@ -104,22 +109,30 @@ def _recordings_keyboard():
 
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛡️ ᴅᴇᴘʟᴏʏ", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("📢 ᴅᴇᴘʟᴏʏ", url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton("ᴅᴇᴘʟᴏʏ", callback_data="force_check")],
+        [InlineKeyboardButton("🛡️ SUPPORT", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("📢 UPDATES", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("✅ VERIFIED", callback_data="force_check")],
     ])
 
 
-def _force_join_text():
-    return f"""<blockquote>{PE(5989952280823076303)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
+def _force_join_text(user_id=None, name="User"):
+    active = False
+    if user_id is not None:
+        try:
+            from Waste.modules.bot.start import active_sessions
+            active = any(getattr(c, "_waste_owner_uid", None) == int(user_id) for c in active_sessions)
+        except Exception:
+            active = False
+    status = "🟢 ACTIVE" if active else "❌ INACTIVE"
+    return f"""<blockquote>{PE(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
-{PE(5989952280823076303)} <b>ᴜꜱᴇʀ : 𝐉 𝐏 𝐄 𝐗 𝐎 🚩</b>
-{PE(5989952280823076303)} <b>ꜱᴛᴀᴛᴜꜱ : ❌ ɪɴᴀᴄᴛɪᴠᴇ</b>
+{PE(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
+{PE(PE_USER)} <b>ꜱᴛᴀᴛᴜꜱ : {status}</b>
 
-{PE(5989952280823076303)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
+{PE(PE_USER)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
 
-{PE(5445284980978621387)} <b>ᴊᴏɪɴ sᴜᴘᴘᴏʀᴛ + ᴜᴘᴅᴀᴛᴇs ᴛᴏ ᴜɴʟᴏᴄᴋ ᴀᴄᴄᴇss.</b>
-{PE(5992130701120507687)} <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴅᴇᴘʟᴏʏ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
+{PE(PE_SUPPORT)} <b>ᴊᴏɪɴ sᴜᴘᴘᴏʀᴛ + ᴜᴘᴅᴀᴛᴇs ᴛᴏ ᴜɴʟᴏᴄᴋ ᴀᴄᴄᴇss.</b>
+{PE(PE_VERIFIED)} <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴠᴇʀɪғɪᴇᴅ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
 
 
 async def _joined(client, user_id):
@@ -136,13 +149,15 @@ async def _joined(client, user_id):
 
 
 async def _send_force_join(client, message):
+    name = escape(str(getattr(message.from_user, "first_name", None) or getattr(message.from_user, "username", None) or "User")) if getattr(message, "from_user", None) else "User"
+    text = _force_join_text(getattr(message.from_user, "id", None), name)
     try:
-        await message.reply_video(FORCE_VIDEO_URL, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+        await message.reply_video(FORCE_VIDEO_URL, caption=text, reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
     except Exception:
         try:
-            await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
+            await message.reply_photo(ALIVE_PIC, caption=text, reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
         except Exception:
-            await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
+            await message.reply_text(text, reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
 def _group_help_keyboard():
@@ -273,7 +288,7 @@ def _module_text(key):
         commands = dict(MODULE_FALLBACKS.get(key, []))
     if not commands:
         return f"<blockquote><b>❌ {key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
-    lines = [f"<blockquote><b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
+    lines = [f"<blockquote>{PE(PE_USER)} <b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
     for command, desc in commands.items():
         command = str(command).strip()
         if command.startswith((".", "/")):
@@ -281,13 +296,14 @@ def _module_text(key):
         else:
             display = f".{command}"
         slash = display.replace(".", "/", 1) if display.startswith(".") else display
-        lines.append(f"<blockquote>• <code>{display}</code>  |  <code>{slash}</code>\n  {desc}</blockquote>")
+        lines.append(f"<blockquote>{PE(PE_COMMAND)} <code>{display}</code>  |  <code>{slash}</code>\n{PE(PE_USER)}  {desc}</blockquote>")
     return "\n".join(lines)
 
 
 @Client.on_message(filters.command("force", [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
 async def force_command(client, message):
-    if not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
+    is_private = bool(message.chat and getattr(message.chat.type, "value", message.chat.type) == "private")
+    if is_private and not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
         return await _send_force_join(client, message)
     try:
         return await message.reply_video(FORCE_VIDEO_URL, caption=_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
@@ -404,14 +420,14 @@ async def force_callback(client, query):
         return
     if query.data == "force_recordings":
         await query.answer()
-        text = f"<blockquote>{PE(5992130701120507687)} <b>ᴠᴄғɪɢʜᴛ ʀᴇᴄᴏʀᴅɪɴɢs</b>\n\n{PE(5989952280823076303)} <b>ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴇʀᴇ.</b></blockquote>"
+        text = f"<blockquote>{PE(PE_COMMAND)} <b>ᴠᴄғɪɢʜᴛ ʀᴇᴄᴏʀᴅɪɴɢs</b>\n\n{PE(PE_USER)} <b>ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴇʀᴇ.</b></blockquote>"
         return await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode=enums.ParseMode.HTML)
     if query.data.startswith("force_record:"):
         await query.answer()
         action = query.data.split(":", 1)[1]
         hosted = await _hosted_for_user(user_id)
         if not hosted:
-            return await query.message.edit_text("<blockquote>❌ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ᴏɴʟɪɴᴇ.</blockquote>", parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ᴏɴʟɪɴᴇ.</b></blockquote>", parse_mode=enums.ParseMode.HTML)
         if action == "addrc":
             return await query.message.edit_text("<blockquote>➕ <b>ᴀᴅᴅʀᴄ</b>\n\nꜱᴇɴᴅ ᴀɴ ᴀᴜᴅɪᴏ / ᴠᴏɪᴄᴇ ᴛᴏ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ᴄʜᴀᴛ ᴏʀ ᴜsᴇ <code>.addrc</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
         if action in {"myrc", "rcinfo", "removerc"}:
@@ -423,7 +439,7 @@ async def force_callback(client, query):
             if not rows:
                 return await query.message.edit_text("<blockquote>📂 ɴᴏ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
             if action == "rcinfo":
-                text = "<blockquote>" + PE(5992130701120507687) + " <b>ʀᴇᴄᴏʀᴅɪɴɢ ɪɴғᴏ</b>\n\n" + "\n".join(f"{i+1}. {r.get('name','Recording')} — {int(r.get('duration',0))}s" for i,r in enumerate(rows)) + "</blockquote>"
+                text = "<blockquote>" + PE(PE_COMMAND) + " <b>ʀᴇᴄᴏʀᴅɪɴɢ ɪɴғᴏ</b>\n\n" + "\n".join(f"{i+1}. {r.get('name','Recording')} — {int(r.get('duration',0))}s" for i,r in enumerate(rows)) + "</blockquote>"
                 return await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
             buttons=[]
             for r in rows:
@@ -432,7 +448,7 @@ async def force_callback(client, query):
                 buttons.append([InlineKeyboardButton(f"✦ {name}", callback_data=cb)])
             buttons.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")])
             title = "📂 ᴍʏ ʀᴇᴄᴏʀᴅɪɴɢs" if action == "myrc" else "🗑️ ʀᴇᴍᴏᴠᴇ ʀᴇᴄᴏʀᴅɪɴɢ"
-            return await query.message.edit_text(f"<blockquote>{PE(5992130701120507687)} <b>{title}</b>\n\nꜱᴇʟᴇᴄᴛ ᴀ ʀᴇᴄᴏʀᴅɪɴɢ.</blockquote>", reply_markup=InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_COMMAND)} <b>{title}</b>\n\nꜱᴇʟᴇᴄᴛ ᴀ ʀᴇᴄᴏʀᴅɪɴɢ.</blockquote>", reply_markup=InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.HTML)
         if action == "bass":
             return await query.message.edit_text("<blockquote>🔊 <b>ʙᴀss</b>\n\nᴜsᴇ <code>.bass 100</code> ᴛᴏ <code>.bass 500</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
         return
@@ -470,7 +486,7 @@ async def force_callback(client, query):
                 return await query.message.edit_text("<blockquote>❌ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ɪɴ ᴀɴʏ ᴠᴄ. ᴜsᴇ <code>.join &lt;chat_id&gt;</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғɪʀsᴛ.</blockquote>", parse_mode=enums.ParseMode.HTML)
             kb=[[InlineKeyboardButton(f"▶️ ᴘʟᴀʏ ɪɴ {cid}", callback_data=f"force_vcplay:{rid}:{cid}")] for cid in joined]
             kb.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")])
-            return await query.message.edit_text(f"<blockquote>{PE(5992130701120507687)} <b>ᴄʜᴏᴏsᴇ ᴠᴄ</b>\n\n🎙️ {rec.get('name','Recording')}</blockquote>", reply_markup=InlineKeyboardMarkup(kb), parse_mode=enums.ParseMode.HTML)
+            return await query.message.edit_text(f"<blockquote>{PE(PE_COMMAND)} <b>ᴄʜᴏᴏsᴇ ᴠᴄ</b>\n\n🎙️ {rec.get('name','Recording')}</blockquote>", reply_markup=InlineKeyboardMarkup(kb), parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
             return await query.answer(f"Play menu failed: {type(exc).__name__}", show_alert=True)
     if query.data.startswith("force_vcplay:"):
