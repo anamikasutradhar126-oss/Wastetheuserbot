@@ -349,7 +349,8 @@ async def disubscription_cmd(client: Client, message: Message):
         await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴅᴇᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\n{_pe(PE_USER)} <b>ʏᴏᴜʀ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʜᴀs ᴇɴᴅᴇᴅ. ᴄᴏɴᴛᴀᴄᴛ @day1Nomore ᴛᴏ ʀᴇᴀᴄᴛɪᴠᴀᴛᴇ ɪᴛ.</b>", parse_mode="html")
     except Exception as exc:
         log.warning("Could not notify unsubscribed user %s: %s", uid, exc)
-    await message.reply_text(f"{_pe(PE_USER)} <b>{"sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ." if result.deleted_count else "ɴᴏ ᴀᴄᴛɪᴠᴇ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ғᴏᴜɴᴅ."}</b>", parse_mode="html")
+    status_text = "sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ." if result.deleted_count else "ɴᴏ ᴀᴄᴛɪᴠᴇ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ғᴏᴜɴᴅ."
+    await message.reply_text(f"{_pe(PE_USER)} <b>{status_text}</b>", parse_mode="html")
 
 @app.on_message(filters.command("clone", [".", "/"]) & filters.private)
 async def clone(bot: Client, msg: Message):
