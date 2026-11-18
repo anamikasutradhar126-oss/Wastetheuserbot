@@ -9,7 +9,7 @@ from pyrogram.errors import SessionPasswordNeeded, PhoneCodeExpired, PhoneCodeIn
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaVideo
 from pymongo import MongoClient
 
-from config import OWNER_ID, MONGO_URL
+from config import OWNER_ID, ALIVE_PIC, MONGO_URL
 from Waste import app, API_ID, API_HASH
 
 log = logging.getLogger(__name__)
@@ -34,29 +34,27 @@ PE_USER = 5471952986970267163
 PE_COMMAND = 5445284980978621387
 PE_SUPPORT = 5445284980978621387
 PE_VERIFIED = 5226512880362332956
+PE_PAGE = 5226512880362332956
+PE_MAIN = 5989975649740134220
+PE_NEXT = 5992269308305084799
+
+def _pe(eid, fallback="·"):
+    return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
 
 # Start-menu buttons are defined here so /start never depends on the legacy
 # Data object, which does not contain the old buttons in this build.
-def _ser_name(name):
-    lower = "𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯"
-    upper = "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉"
-    return str(name).translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", lower + upper))
-
 START_BUTTONS = [
-    [InlineKeyboardButton(_ser_name("basic guide"), callback_data="guide")],
-    [InlineKeyboardButton(_ser_name("waste ↗"), url="https://t.me/wasteBotz"), InlineKeyboardButton(_ser_name("about"), callback_data="about")],
-    [InlineKeyboardButton(_ser_name("help"), callback_data="help"), InlineKeyboardButton(_ser_name("music"), callback_data="botforce:cmd:Music")],
-    [InlineKeyboardButton(_ser_name("updates ↗"), url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton(_ser_name("support ↗"), url="https://t.me/wasteBotz")],
+    [InlineKeyboardButton("𝙗𝙖𝙨𝙞𝙘 𝙜𝙪𝙞𝙙𝙚", callback_data="guide")],
+    [InlineKeyboardButton("𝙬𝙖𝙨𝙩𝙚 ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("𝙖𝙗𝙤𝙪𝙩", callback_data="about")],
+    [InlineKeyboardButton("𝙝𝙚𝙡𝙥", callback_data="help"), InlineKeyboardButton("𝙢𝙪𝙨𝙞𝙘", callback_data="botforce:cmd:Music")],
+    [InlineKeyboardButton("𝙪𝙥𝙙𝙖𝙩𝙚𝙨 ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("𝙨𝙪𝙥𝙥𝙤𝙧𝙩 ↗", url="https://t.me/wasteBotz")],
 ]
 
 HOME_BUTTONS = START_BUTTONS
 
-ABOUT_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴘᴏᴡᴇʀғᴜʟ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀʙᴏᴛ ᴡɪᴛʜ ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ, ᴜᴛɪʟɪᴛɪᴇs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ.</b></blockquote>"
+ABOUT_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴘᴏᴡᴇʀғᴜʟ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀʙᴏᴛ ᴡɪᴛʜ ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ, ᴜᴛɪʟɪᴛɪᴇs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ.</b></blockquote>"
 DONATE_TEXT = ABOUT_TEXT
-GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴜsᴇ <code>/add</code> ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ <code>/help</code> ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
-
-def _pe(eid, fallback="✦"):
-    return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
+GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴜsᴇ <code>/add</code> ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ <code>/help</code> ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">·</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
 
 def _started_name(message: Message) -> str:
     user = getattr(message, "from_user", None)
@@ -112,10 +110,11 @@ async def _force_joined(client: Client, user_id: int) -> bool:
 
 def _force_markup():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(_ser_name("waste botz ↗"), url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton(_ser_name("waste updates ↗"), url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton(_ser_name("verified"), callback_data="start_force_check")],
+        [InlineKeyboardButton("𝙨𝙪𝙥𝙥𝙤𝙧𝙩 ↗", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("𝙪𝙥𝙙𝙖𝙩𝙚𝙨 ↗", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("𝙫𝙚𝙧𝙞𝙛𝙞𝙚𝙙", callback_data="start_force_check")],
     ])
+
 
 async def _send_start_or_force(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
@@ -134,7 +133,7 @@ async def start_handler(client: Client, message: Message):
     await _send_start_or_force(client, message)
 
 
-BOT_FORCE_TEXT = "<blockquote>✦ <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"
+BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5471952986970267163">·</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
 
 FORCE_COMMANDS = [
     "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone",
@@ -144,111 +143,140 @@ FORCE_COMMANDS = [
     "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "VcFight", "promotion", "aichat",
     "Music", "AutoTextPromo"
 ]
-PAGE_SIZE = 11
-TOTAL_PAGES = 6
 
 def _bot_force_page_text(page):
-    page = max(0, min(int(page), TOTAL_PAGES - 1))
-    items = FORCE_COMMANDS[page * PAGE_SIZE:(page + 1) * PAGE_SIZE]
-    lines = ["<blockquote>✦ <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>"]
-    for name in items:
-        lines.append(f"{_pe(PE_COMMAND)} <b>{_ser_name(name)}</b>")
-    lines.append(f"{_pe(5226512880362332956)} <b>ᴘᴀɢᴇ {page + 1}/{TOTAL_PAGES}</b>")
-    if page < TOTAL_PAGES - 1:
-        lines.append(f"{_pe(5992269308305084799)} <b>ɴᴇxᴛ</b>")
-    lines.append(f"{_pe(5989975649740134220)} <b>ᴍᴀɪɴ ᴍᴇɴᴜ</b>")
-    lines.append("</blockquote>")
-    return "\n".join(lines)
+    total = 6
+    chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
+    chunk = chunks[max(0, min(int(page), total - 1))]
+    # Only the requested header and command list are shown.
+    lines = ['<blockquote><tg-emoji emoji-id="5471952986970267163">·</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>', '']
+    for name in chunk:
+        lines.append(f'<tg-emoji emoji-id="{PE_COMMAND}">·</tg-emoji> <b>{_ser_name(name)}</b>')
+    lines.append(f'<tg-emoji emoji-id="{PE_PAGE}">·</tg-emoji> <b>ᴘᴀɢᴇ {int(page)+1}/6</b>')
+    lines.append('</blockquote>')
+    return '\n'.join(lines)
+
+def _ser_name(name):
+    # Mathematical Sans Bold Italic style requested for command labels.
+    mapping = str.maketrans({
+        'a':'𝙖','b':'𝙗','c':'𝙘','d':'𝙙','e':'𝙚','f':'𝙛','g':'𝙜','h':'𝙝','i':'𝙞','j':'𝙟','k':'𝙠','l':'𝙡','m':'𝙢',
+        'n':'𝙣','o':'𝙤','p':'𝙥','q':'𝙦','r':'𝙧','s':'𝙨','t':'𝙩','u':'𝙪','v':'𝙫','w':'𝙬','x':'𝙭','y':'𝙮','z':'𝙯'
+    })
+    return str(name).translate(mapping)
 
 def _bot_force_keyboard(page=0):
-    page = max(0, min(int(page), TOTAL_PAGES - 1))
-    items = FORCE_COMMANDS[page * PAGE_SIZE:(page + 1) * PAGE_SIZE]
-    rows=[]
+    page = max(0, min(int(page), 5))
+    chunk = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
+    rows = []
+    items = chunk[page]
     for i in range(0, len(items), 2):
-        row=[InlineKeyboardButton(_ser_name(items[i]), callback_data=f"botforce:cmd:{items[i]}")]
-        if i+1 < len(items):
+        row = [InlineKeyboardButton(_ser_name(items[i]), callback_data=f"botforce:cmd:{items[i]}")]
+        if i + 1 < len(items):
             row.append(InlineKeyboardButton(_ser_name(items[i+1]), callback_data=f"botforce:cmd:{items[i+1]}"))
         rows.append(row)
-    nav=[]
+    nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton(_ser_name("prev"), callback_data=f"botforce:page:{page-1}"))
-    nav.append(InlineKeyboardButton(_ser_name(f"page {page+1}/{TOTAL_PAGES}"), callback_data="botforce:noop"))
-    if page < TOTAL_PAGES - 1:
-        nav.append(InlineKeyboardButton(_ser_name("next"), callback_data=f"botforce:page:{page+1}"))
+        nav.append(InlineKeyboardButton("𝙗𝙖𝙘𝙠", callback_data=f"botforce:page:{page-1}"))
+    nav.append(InlineKeyboardButton(f"𝙥𝙖𝙜𝙚 {page+1}/6", callback_data="botforce:noop"))
+    if page < 5:
+        nav.append(InlineKeyboardButton("𝙣𝙚𝙭𝙩", callback_data=f"botforce:page:{page+1}"))
     rows.append(nav)
-    rows.append([InlineKeyboardButton(_ser_name("main menu"), callback_data="home")])
+    rows.append([InlineKeyboardButton("𝙢𝙖𝙞𝙣 𝙢𝙚𝙣𝙪", callback_data="home")])
     return InlineKeyboardMarkup(rows)
+
+
+def _bot_force_media_kwargs():
+    return dict(caption=BOT_FORCE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+
 
 @app.on_message(filters.command("force", [".", "/"]) & filters.private)
 async def force_handler(client: Client, message: Message):
     if not await _force_joined(client, message.from_user.id):
-        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
-    return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_bot_force_page_text(0), reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+        try:
+            return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+        except Exception:
+            return await client.send_message(message.chat.id, _force_caption(message), reply_markup=_force_markup(), parse_mode=enums.ParseMode.HTML)
+    try:
+        return await client.send_video(message.chat.id, START_VIDEO_URL, caption=_bot_force_page_text(0), reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
+    except Exception:
+        return await client.send_message(message.chat.id, _bot_force_page_text(0), reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
+
 
 @app.on_callback_query(filters.regex(r"^botforce:"))
 async def bot_force_callback(client: Client, query: CallbackQuery):
     await query.answer()
-    data=query.data.split(":",1)[1]
+    data = query.data.split(":", 1)[1]
     if data == "noop":
         return
     if data == "menu":
-        return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML), reply_markup=_bot_force_keyboard(0))
+        try:
+            return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
+        except Exception:
+            return await query.message.edit_text(_bot_force_page_text(0), reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
     if data.startswith("page:"):
-        page=int(data.split(":",1)[1])
-        return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(page), parse_mode=enums.ParseMode.HTML), reply_markup=_bot_force_keyboard(page))
-    if data.startswith("cmd:"):
+        page = int(data.split(":", 1)[1])
+        try:
+            return await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(page), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(page))
+        except Exception:
+            return await query.message.edit_text(_bot_force_page_text(page), reply_markup=_bot_force_keyboard(page), parse_mode=enums.ParseMode.HTML)
+    if data in {"music", "vcfight", "recordings", "autotextpromo"}:
         from Waste.modules.help.help import _find_help_key, _module_text
-        raw=data.split(":",1)[1]
-        key=_find_help_key(raw) or raw
-        return await query.message.edit_caption(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(_ser_name("back to force commands"), callback_data="botforce:menu")]]), parse_mode=enums.ParseMode.HTML)
+        key = {"music": "Music", "vcfight": "VcFight", "recordings": "VcFight", "autotextpromo": "AutoTextPromo"}[data]
+        text = _module_text(_find_help_key(key) or key)
+    elif data.startswith("cmd:"):
+        from Waste.modules.help.help import _find_help_key, _module_text
+        raw = data.split(":", 1)[1]
+        key = _find_help_key(raw) or raw
+        text = _module_text(key)
+    else:
+        return
+    await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ ᴛᴏ ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="botforce:menu")]]), parse_mode=enums.ParseMode.HTML)
+
 
 @app.on_callback_query(filters.regex(r"^start_force_check$"))
 async def start_force_check(client: Client, query: CallbackQuery):
     if not await _force_joined(client, query.from_user.id):
         await query.answer("Please join both channels first.", show_alert=True)
         return
-    await query.answer("Verified")
-    await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query.from_user), parse_mode=enums.ParseMode.HTML), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+    await query.answer("Verified successfully")
+    try:
+        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+    except Exception:
+        await query.message.edit_text(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
 
 @app.on_message(filters.command("about", [".", "/"]) & filters.private)
 async def about_command(client: Client, message: Message):
-    await client.send_video(message.chat.id, START_VIDEO_URL, caption=ABOUT_TEXT, reply_markup=InlineKeyboardMarkup(HOME_BUTTONS), parse_mode="html", supports_streaming=True)
+    await message.reply_text(ABOUT_TEXT, reply_markup=InlineKeyboardMarkup(HOME_BUTTONS))
 
 @app.on_callback_query(filters.regex(r"^(home|help|force_menu|about|donate|guide)$"))
 async def callback_handler(client: Client, query: CallbackQuery):
     await query.answer()
-    data=query.data
+    data = query.data
     if data == "home":
-        caption=_start_caption(query.from_user); markup=InlineKeyboardMarkup(START_BUTTONS)
+        try:
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_start_caption(query), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+        except Exception:
+            await query.message.edit_text(_start_caption(query), reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
     elif data in {"help", "force_menu"}:
-        caption=_bot_force_page_text(0); markup=_bot_force_keyboard(0)
+        try:
+            await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=_bot_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_bot_force_keyboard(0))
+        except Exception:
+            await query.message.edit_text(BOT_FORCE_TEXT, reply_markup=_bot_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
     elif data == "about":
-        caption=ABOUT_TEXT; markup=InlineKeyboardMarkup(HOME_BUTTONS)
+        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=ABOUT_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(HOME_BUTTONS))
     elif data == "donate":
-        caption=DONATE_TEXT; markup=InlineKeyboardMarkup(START_BUTTONS)
-    else:
-        caption=GUIDE_TEXT
-        markup=InlineKeyboardMarkup([[InlineKeyboardButton(_ser_name("add"), callback_data="guide_add")],[InlineKeyboardButton(_ser_name("main menu"), callback_data="home")]])
-    await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=caption, parse_mode="html"), reply_markup=markup)
-
-@app.on_callback_query(filters.regex(r"^guide_add$"))
-async def guide_add_callback(client: Client, query: CallbackQuery):
-    await query.answer()
-    uid=query.from_user.id
-    if _session_doc(uid):
-        return await query.message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇ /remove ғɪʀsᴛ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ ᴀ ɴᴇᴡ ᴀᴄᴄᴏᴜɴᴛ.</b>", parse_mode="html")
-    user_sessions.pop(uid, None)
-    user_sessions[uid]={"step":"awaiting_phone"}
-    await query.message.reply_text(f"{_pe(PE_USER)} <b>ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):</b>", parse_mode="html")
+        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=DONATE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
+    elif data == "guide":
+        await query.message.edit_media(InputMediaVideo(START_VIDEO_URL, caption=GUIDE_TEXT, parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=InlineKeyboardMarkup(START_BUTTONS))
 
 @app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
 async def group_play_command(client: Client, message: Message):
     parts = message.text.split(None, 1) if message.text else []
     query = parts[1].strip() if len(parts) > 1 else ""
     if not query:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴀɢᴇ: /play song name</b>", parse_mode="html")
+        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴀɢᴇ: /play song name</b>", parse_mode=enums.ParseMode.HTML)
     if not active_sessions:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ɴᴏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ᴏɴʟɪɴᴇ ʀɪɢʜᴛ ɴᴏᴡ.</b>", parse_mode="html")
+        return await message.reply_text(f"{_pe(PE_USER)} <b>ɴᴏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ᴏɴʟɪɴᴇ ʀɪɢʜᴛ ɴᴏᴡ.</b>", parse_mode=enums.ParseMode.HTML)
 
     hosted = None
     # The bot is only the control interface. Prefer the connected account
@@ -272,7 +300,7 @@ async def group_play_command(client: Client, message: Message):
                 continue
     hosted = hosted or active_sessions[0]
 
-    status = await message.reply_text(f"{_pe(PE_USER)} <b>sᴇᴀʀᴄʜɪɴɢ ʏᴏᴜᴛᴜʙᴇ...</b>", parse_mode="html")
+    status = await message.reply_text(f"{_pe(PE_USER)} <b>sᴇᴀʀᴄʜɪɴɢ ʏᴏᴜᴛᴜʙᴇ...</b>", parse_mode=enums.ParseMode.HTML)
     path = None
     try:
         from Waste.modules.basic.playvc import play_song_in_chat
@@ -280,11 +308,11 @@ async def group_play_command(client: Client, message: Message):
         title = info.get("title") or query
         duration = info.get("duration_string") or "Unknown"
         if queued:
-            await status.edit_text(f"{_pe(PE_USER)} <b>ǫᴜᴇᴜᴇᴅ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>", parse_mode="html")
+            await status.edit_text(f"{_pe(PE_USER)} <b>ǫᴜᴇᴜᴇᴅ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>", parse_mode=enums.ParseMode.HTML)
         else:
-            await status.edit_text(f"{_pe(PE_USER)} <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>\n{_pe(PE_USER)} <b>ᴘʟᴀʏɪɴɢ ɪɴ ᴛʜɪs ɢʀᴏᴜᴘs ᴠᴏɪᴄᴇ ᴄʜᴀᴛ</b>", parse_mode="html")
+            await status.edit_text(f"{_pe(PE_USER)} <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>\n{_pe(PE_USER)} <b>ᴘʟᴀʏɪɴɢ ɪɴ ᴛʜɪs ɢʀᴏᴜᴘs ᴠᴏɪᴄᴇ ᴄʜᴀᴛ</b>", parse_mode=enums.ParseMode.HTML)
     except Exception as exc:
-        await status.edit_text(f"{_pe(PE_USER)} <b>ᴍᴜsɪᴄ ғᴀɪʟᴇᴅ: <code>{escape(type(exc).__name__)}</code></b>\n\n<code>{escape(str(exc)[:500])}</code>", parse_mode="html")
+        await status.edit_text(f"{_pe(PE_USER)} <b>ᴍᴜsɪᴄ ғᴀɪʟᴇᴅ: <code>{escape(type(exc).__name__)}</code></b>\n\n<code>{escape(str(exc)[:500])}</code>", parse_mode=enums.ParseMode.HTML)
     finally:
         if path:
             try:
@@ -297,10 +325,10 @@ async def group_play_command(client: Client, message: Message):
 @app.on_message(filters.command("subscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def subscription_cmd(client: Client, message: Message):
     if len(message.command) < 2:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴀɢᴇ: /subscription &lt;user_id&gt; [username]</b>", parse_mode="html")
+        return await message.reply_text("Usage: /subscription <user_id> [username]")
     uid, username = _parse_target(message.command[1:])
     if uid is None:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ. ᴇxᴀᴍᴘʟᴇ: /subscription 123456789 username</b>", parse_mode="html")
+        return await message.reply_text(f"{_pe(PE_COMMAND)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b> ᴇxᴀᴍᴘʟᴇ: <code>/subscription 123456789 username</code>", parse_mode="html")
     expires = datetime.now(timezone.utc) + timedelta(days=30)
     subscriptions_col.update_one({"_id": uid}, {"$set": {"user_id": uid, "username": username or "", "expires_at": expires, "activated_at": datetime.now(timezone.utc)}}, upsert=True)
     # Restart premium background features immediately if this account is online.
@@ -318,10 +346,10 @@ async def subscription_cmd(client: Client, message: Message):
             except Exception as exc:
                 log.warning("Could not refresh promotion state for %s: %s", uid, exc)
     try:
-        await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\n{_pe(PE_USER)} <b>ʏᴏᴜʀ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ɪs ᴀᴄᴛɪᴠᴇ ғᴏʀ 30 ᴅᴀʏs.</b>", parse_mode="html")
+        await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\nᴛʜᴇ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ɪs ᴀᴄᴛɪᴠᴇ ғᴏʀ <b>30 ᴅᴀʏs</b>.", parse_mode="html")
     except Exception as exc:
         log.warning("Could not notify subscriber %s: %s", uid, exc)
-    await message.reply_text(f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀᴄᴛɪᴠᴀᴛᴇᴅ ғᴏʀ <code>{uid}</code> ғᴏʀ 30 ᴅᴀʏs.\nᴇxᴘɪʀᴇs: <code>{escape(expires.isoformat())}</code></b>", parse_mode="html")
+    await message.reply_text(f"{_pe(PE_COMMAND)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀᴄᴛɪᴠᴀᴛᴇᴅ</b> ғᴏʀ <code>{uid}</code> ғᴏʀ 30 ᴅᴀʏs.\nᴇxᴘɪʀᴇs: <code>{expires.isoformat()}</code>", parse_mode="html")
 
 @app.on_message(filters.command("disubscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def disubscription_cmd(client: Client, message: Message):
@@ -329,7 +357,7 @@ async def disubscription_cmd(client: Client, message: Message):
         return await message.reply_text("Usage: /disubscription <user_id> [username]")
     uid, username = _parse_target(message.command[1:])
     if uid is None:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b>", parse_mode="html")
+        return await message.reply_text(f"{_pe(PE_COMMAND)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b>", parse_mode="html")
     result = subscriptions_col.delete_one({"_id": uid})
     settings_col.update_one({"_id": uid}, {"$set": {"allvc_auto": False, "autotextpromo": False}}, upsert=True)
     for hosted in list(active_sessions):
@@ -346,11 +374,10 @@ async def disubscription_cmd(client: Client, message: Message):
             except Exception as exc:
                 log.warning("Could not disable promotion mode for %s: %s", uid, exc)
     try:
-        await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴅᴇᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\n{_pe(PE_USER)} <b>ʏᴏᴜʀ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʜᴀs ᴇɴᴅᴇᴅ. ᴄᴏɴᴛᴀᴄᴛ @day1Nomore ᴛᴏ ʀᴇᴀᴄᴛɪᴠᴀᴛᴇ ɪᴛ.</b>", parse_mode="html")
+        await client.send_message(uid, f"{_pe(PE_USER)} <b>sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴅᴇᴀᴄᴛɪᴠᴀᴛᴇᴅ</b>\n\nʏᴏᴜʀ ᴘʀᴏᴍᴏᴛɪᴏɴ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʜᴀs ᴇɴᴅᴇᴅ. ᴄᴏɴᴛᴀᴄᴛ @day1Nomore ᴛᴏ ʀᴇᴀᴄᴛɪᴠᴀᴛᴇ ɪᴛ.", parse_mode="html")
     except Exception as exc:
         log.warning("Could not notify unsubscribed user %s: %s", uid, exc)
-    status_text = "sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ." if result.deleted_count else "ɴᴏ ᴀᴄᴛɪᴠᴇ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ғᴏᴜɴᴅ."
-    await message.reply_text(f"{_pe(PE_USER)} <b>{status_text}</b>", parse_mode="html")
+    await message.reply_text(f"{_pe(PE_COMMAND)} <b>{"sᴜʙsᴄʀɪᴘᴛɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ." if result.deleted_count else "ɴᴏ ᴀᴄᴛɪᴠᴇ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ғᴏᴜɴᴅ."}</b>", parse_mode="html")
 
 @app.on_message(filters.command("clone", [".", "/"]) & filters.private)
 async def clone(bot: Client, msg: Message):
@@ -372,7 +399,7 @@ async def clone(bot: Client, msg: Message):
             await start_autotextpromo_if_enabled(client)
         except Exception as exc:
             log.warning("Clone background start failed: %s", exc)
-        await msg.reply(f"❖ ɴᴏᴡ ʏᴏᴜ ᴀʀᴇ ʀᴇᴀᴅʏ ᴛᴏ ғɪɢʜᴛ\n\n❍ ᴀᴄᴄᴏᴜɴᴛ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ\n\n❖ {user.first_name}")
+        await msg.reply(f"{_pe(PE_USER)} <b>ɴᴏᴡ ʏᴏᴜ ᴀʀᴇ ʀᴇᴀᴅʏ ᴛᴏ ғɪɢʜᴛ</b>\n\n{_pe(PE_USER)} <b>ᴀᴄᴄᴏᴜɴᴛ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ</b>\n\n{_pe(PE_USER)} <b>{escape(user.first_name)}</b>", parse_mode="html")
     except Exception as e:
         await msg.reply(f"**ERROR:** `{e}`")
 
@@ -380,7 +407,7 @@ async def clone(bot: Client, msg: Message):
 async def add_session_command(client: Client, message: Message):
     uid = message.from_user.id
     if _session_doc(uid):
-        return await message.reply(f"{_pe(PE_USER)} <b>ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.</b>", parse_mode="html")
+        return await message.reply(f"{_pe(PE_USER)} ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ. ᴜsᴇ /remove ғɪʀsᴛ.", parse_mode=enums.ParseMode.HTML)
     # A previous expired/failed login must never leave a stale wizard behind.
     old = user_sessions.pop(uid, None)
     if old and old.get("client"):
@@ -402,14 +429,14 @@ async def add_session_command(client: Client, message: Message):
                 sent = await temp.send_code(phone_text)
                 user_sessions[uid]["phone_code_hash"] = sent.phone_code_hash
                 user_sessions[uid]["step"] = "awaiting_otp"
-                return await message.reply(f"{_pe(PE_USER)} <b>ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code></b>", parse_mode="html")
+                return await message.reply(f"{_pe(PE_USER)} ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code>", parse_mode=enums.ParseMode.HTML)
             except Exception as e:
                 try: await temp.disconnect()
                 except Exception: pass
                 user_sessions.pop(uid, None)
-                return await message.reply(f"{_pe(PE_USER)} <b>ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.</b>", parse_mode="html")
-        return await message.reply(f"{_pe(PE_USER)} <b>ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code></b>", parse_mode="html")
-    await message.reply(f"{_pe(PE_USER)} <b>ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):</b>", parse_mode="html")
+                return await message.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
+        return await message.reply(f"{_pe(PE_USER)} ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code>", parse_mode=enums.ParseMode.HTML)
+    await message.reply(f"{_pe(PE_USER)} ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (ᴇ.ɢ. <code>+918200000009</code>):", parse_mode=enums.ParseMode.HTML)
     user_sessions[uid] = {"step": "awaiting_phone"}
 
 @app.on_message(filters.command("remove", [".", "/"]) & filters.private)
@@ -423,7 +450,7 @@ async def remove_session(client: Client, msg: Message):
                 pass
             active_sessions.remove(hosted)
     result = sessions_col.delete_one({"_id": uid})
-    await msg.reply(f"{_pe(PE_USER)} <b>{"ʏᴏᴜʀ sᴇssɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ." if result.deleted_count else "ɴᴏ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ ғᴏᴜɴᴅ."}</b>", parse_mode="html")
+    await msg.reply(f"{_pe(PE_USER)} ʏᴏᴜʀ sᴇssɪᴏɴ ʀᴇᴍᴏᴠᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ." if result.deleted_count else f"{_pe(PE_USER)} ɴᴏ ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴ ғᴏᴜɴᴅ.", parse_mode=enums.ParseMode.HTML)
 
 @app.on_message()
 async def session_handler(client: Client, msg: Message):
@@ -444,7 +471,7 @@ async def session_handler(client: Client, msg: Message):
     if step == "awaiting_phone":
         phone = msg.text.strip().replace(" ", "")
         if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 8 or len(phone) > 16:
-            return await msg.reply(f"{_pe(PE_USER)} <b>ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code></b>", parse_mode="html")
+            return await msg.reply(f"{_pe(PE_USER)} ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>+918200000009</code>", parse_mode=enums.ParseMode.HTML)
         temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True, device_model="Waste", app_version="1.0")
         session.update({"phone": phone, "client": temp})
         try:
@@ -452,9 +479,9 @@ async def session_handler(client: Client, msg: Message):
             sent = await temp.send_code(phone)
             session["phone_code_hash"] = sent.phone_code_hash
             session["step"] = "awaiting_otp"
-            await msg.reply(f"{_pe(PE_USER)} <b>ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code></b>", parse_mode="html")
+            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: <code>1 2 3 4 5</code>", parse_mode=enums.ParseMode.HTML)
         except Exception as e:
-            await msg.reply(f"{_pe(PE_USER)} <b>ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.</b>", parse_mode="html")
+            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ᴇʀʀᴏʀ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -464,15 +491,15 @@ async def session_handler(client: Client, msg: Message):
             await temp.sign_in(phone_number=session["phone"], phone_code_hash=session["phone_code_hash"], phone_code=msg.text.strip().replace(" ", ""))
         except SessionPasswordNeeded:
             session["step"] = "awaiting_2fa"
-            return await msg.reply(f"{_pe(PE_USER)} <b>sᴇɴᴅ ʏᴏᴜʀ 2ғᴀ ᴘᴀssᴡᴏʀᴅ.</b>", parse_mode="html")
+            return await msg.reply(f"{_pe(PE_USER)} sᴇɴᴅ ʏᴏᴜʀ 2ғᴀ ᴘᴀssᴡᴏʀᴅ.", parse_mode=enums.ParseMode.HTML)
         except (PhoneCodeExpired, PhoneCodeInvalid) as e:
-            await msg.reply(f"{_pe(PE_USER)} <b>ᴏᴛᴘ ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ ᴀɴᴅ ᴇɴᴛᴇʀ ᴛʜᴇ ɴᴇᴡᴇsᴛ ᴏᴛᴘ.</b>", parse_mode="html")
+            await msg.reply(f"{_pe(PE_USER)} ᴏᴛᴘ ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
             return
         except Exception as e:
-            await msg.reply(f"{_pe(PE_USER)} <b>ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.</b>", parse_mode="html")
+            await msg.reply(f"{_pe(PE_USER)} ʟᴏɢɪɴ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -484,7 +511,7 @@ async def session_handler(client: Client, msg: Message):
             await temp.check_password(msg.text.strip())
             await finalize_login(temp, msg, uid)
         except Exception as e:
-            await msg.reply(f"{_pe(PE_USER)} <b>ɪɴᴄᴏʀʀᴇᴄᴛ 2ғᴀ ᴘᴀssᴡᴏʀᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.</b>", parse_mode="html")
+            await msg.reply(f"{_pe(PE_USER)} ɪɴᴄᴏʀʀᴇᴄᴛ 2ғᴀ ᴘᴀssᴡᴏʀᴅ: <code>{escape(str(e))}</code>\nᴘʟᴇᴀsᴇ ᴜsᴇ /add ᴀɢᴀɪɴ.", parse_mode=enums.ParseMode.HTML)
             try: await temp.disconnect()
             except Exception: pass
             user_sessions.pop(uid, None)
@@ -528,7 +555,7 @@ async def start_hosted_session(uid, string, notify=False):
         log.warning("Post-connect setup failed for %s: %s", uid, exc)
     if notify:
         try:
-            await app.send_message(uid, f"{_pe(PE_USER)} <b>ᴜsᴇʀʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ</b>\n\n{_pe(PE_USER)} <b>ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ ɪs ɴᴏᴡ ᴏɴʟɪɴᴇ ᴡɪᴛʜ ᴛʜᴇ ＷＡＳＴＥ Ｘ ＵＢＯＴ ғᴇᴀᴛᴜʀᴇs.</b>", parse_mode="html")
+            await app.send_message(uid, f"{_pe(PE_USER)} <b>ᴜsᴇʀʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ</b>\n\n{_pe(PE_USER)} ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ ɪs ɴᴏᴡ ᴏɴʟɪɴᴇ ᴡɪᴛʜ ᴛʜᴇ ᴡᴀsᴛᴇ x ᴜsᴇʀʙᴏᴛ ғᴇᴀᴛᴜʀᴇs.", parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
             log.warning("Notification failed for %s: %s", uid, exc)
     return hosted
@@ -539,9 +566,9 @@ async def finalize_login(client: Client, msg: Message, uid: int):
         user = await client.get_me()
         sessions_col.update_one({"_id": uid}, {"$set": {"session": string, "name": user.first_name, "user_id": user.id, "username": user.username}}, upsert=True)
         await start_hosted_session(uid, string, notify=False)
-        await msg.reply(f"{_pe(PE_USER)} <b>ʟᴏɢɢᴇᴅ ɪɴ ᴀs {escape(str(user.first_name))}.\n\nᴀᴜᴛᴏ-ʜᴏsᴛ ɴᴏᴡ ᴏɴ.\n\nᴜss ᴀᴄᴄᴏᴜɴᴛ ᴍᴇ <code>.help</code> sᴇ ᴄᴏᴍᴍᴀɴᴅs ᴅᴇᴋʜᴏ.</b>", parse_mode="html")
+        await msg.reply(f"{_pe(PE_USER)} ʟᴏɢɢᴇᴅ ɪɴ ᴀs <b>{escape(str(user.first_name))}</b>.\n\n{_pe(PE_USER)} ᴀᴜᴛᴏ-ʜᴏsᴛ ɴᴏᴡ ᴏɴ.\n\n{_pe(PE_USER)} ᴜss ᴀᴄᴄᴏᴜɴᴛ ᴍᴇ <code>.help</code> sᴇ ᴄᴏᴍᴍᴀɴᴅs ᴅᴇᴋʜᴏ.", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
-        await msg.reply(f"{_pe(PE_USER)} <b>ғɪɴᴀʟ sᴛᴇᴘ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code></b>", parse_mode="html")
+        await msg.reply(f"{_pe(PE_USER)} ғɪɴᴀʟ sᴛᴇᴘ ғᴀɪʟᴇᴅ: <code>{escape(str(e))}</code>", parse_mode=enums.ParseMode.HTML)
     finally:
         try: await client.disconnect()
         except Exception: pass
