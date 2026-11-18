@@ -1,35 +1,80 @@
-from pyrogram import Client, filters
+from html import escape
+
+from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from Waste import app
+from Waste import app, CMD_HELP
+from Waste.modules.bot.premium import PE_COMMAND, PE_PAGE, PE_MAIN, PE_NEXT, pe, serendipity
 
-HELP_TEXT = """<blockquote>❁ <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ - ＨＥＬＰ ＭＥＮＵ</b> ❁\n\nChoose a category below. Commands and existing features stay unchanged.\n\n🔴 Tap a command category to view its commands.\n🔵 Use either <code>.</code> or <code>/</code> where supported.</blockquote>"""
+FORCE_TITLE = f"{pe(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>"
+PAGE_SIZE = 11
 
-CATEGORIES = [
-    ("🎵 MUSIC", "music"), ("🎙️ VCFIGHT", "vcfight"),
-    ("🏠 WELCOME", "welcome"), ("🤖 AI CHAT", "aichat"),
-    ("🛠️ TOOLS", "tools"), ("🎨 FUN", "fun"),
-    ("📢 PROMOTION", "promotion"), ("ℹ️ INFO", "info"),
-]
 
-COMMANDS = {
-    "music": "<blockquote><b>🎵 MUSIC</b>\n\n/play song name\n.play song name\n\nPlay the requested song in the connected account's active group VC.</blockquote>",
-    "vcfight": "<blockquote><b>🎙️ VCFIGHT</b>\n\n/join &lt;group_id&gt;\n.join &lt;group_id&gt;\n/allvc join|leave\n.allvc join|leave\n/fight\n.fight\n/fightstop\n.fightstop\n/vcleave\n.vcleave\n/vcstatus\n.vcstatus\n/recordings\n.recordings\n/addrc\n.addrc\n/removerc\n.removerc\n/myrc\n.myrc\n/rcinfo\n.rcinfo</blockquote>",
-    "welcome": "<blockquote><b>🏠 WELCOME</b>\n\n/welcome on\n.welcome on\n/welcome off\n.welcome off\n\nConnected account welcomes new members in its groups when enabled.</blockquote>",
-    "aichat": "<blockquote><b>🤖 AI CHAT</b>\n\nUse the existing AI Chat commands from the connected userbot.</blockquote>",
-    "tools": "<blockquote><b>🛠️ TOOLS</b>\n\nAll existing tool commands remain available from the userbot's .help menu.</blockquote>",
-    "fun": "<blockquote><b>🎨 FUN</b>\n\nAll existing fun commands remain available from the userbot's .help menu.</blockquote>",
-    "promotion": "<blockquote><b>📢 PROMOTION</b>\n\n.autotextpromo on\n.autotextpromo off\n.promotion &lt;text&gt;\n\nExisting AutoTextPromo behavior is preserved with more varied text.</blockquote>",
-    "info": "<blockquote><b>ℹ️ INFO</b>\n\nUse the connected userbot's existing .help command for the complete command list.</blockquote>",
-}
+def _command_names():
+    names = []
+    for module, commands in CMD_HELP.items():
+        for command in commands:
+            if command not in names:
+                names.append(command)
+    return sorted(names, key=str.lower)
 
-def help_markup():
-    rows=[]
-    for i in range(0,len(CATEGORIES),2):
-        rows.append([InlineKeyboardButton(CATEGORIES[i][0], callback_data=f"help_cat:{CATEGORIES[i][1]}"), InlineKeyboardButton(CATEGORIES[i+1][0], callback_data=f"help_cat:{CATEGORIES[i+1][1]}")])
-    return InlineKeyboardMarkup(rows + [[InlineKeyboardButton("🔙 BACK", callback_data="force_help")]])
 
-@app.on_callback_query(filters.regex(r"^help_cat:"))
-async def help_category(client, query):
-    key=query.data.split(":",1)[1]
+def _page_count():
+    names = _command_names()
+    return max(1, (len(names) + PAGE_SIZE - 1) // PAGE_SIZE)
+
+
+def _page_text(page: int) -> str:
+    names = _command_names()
+    total = _page_count()
+    page = max(0, min(page, total - 1))
+    start = page * PAGE_SIZE
+    current = names[start:start + PAGE_SIZE]
+    rows = [FORCE_TITLE]
+    rows.extend(f"{pe(PE_COMMAND)} <b>{escape(serendipity(name))}</b>" for name in current)
+    rows.append("")
+    rows.append(f"{pe(PE_PAGE)} <b>ᴘᴀɢᴇ {page + 1}/{total}</b>")
+    if page + 1 < total:
+        rows.append(f"{pe(PE_NEXT)} <b>ɴᴇxᴛ</b>")
+    else:
+        rows.append(f"{pe(PE_MAIN)} <b>ᴍᴀɪɴ ᴍᴇɴᴜ</b>")
+    return "\n".join(rows)
+
+
+def _markup(page: int) -> InlineKeyboardMarkup:
+    total = _page_count()
+    rows = []
+    if page > 0:
+        rows.append([InlineKeyboardButton("Ｐʀᴇᴠ", callback_data=f"force_page:{page - 1}"), InlineKeyboardButton("ＮＥＸＴ", callback_data=f"force_page:{page + 1}")])
+    elif total > 1:
+        rows.append([InlineKeyboardButton("Ｐᴀɢᴇ 1/" + str(total), callback_data="force_page:0"), InlineKeyboardButton("ＮＥＸＴ", callback_data="force_page:1")])
+    else:
+        rows.append([InlineKeyboardButton("Ｐᴀɢᴇ 1/1", callback_data="force_page:0")])
+    rows.append([InlineKeyboardButton("ＭＡＩＮ ＭＥＮＵ", callback_data="home")])
+    return InlineKeyboardMarkup(rows)
+
+
+HELP_TEXT = "\n".join([
+    f"{pe(PE_MAIN)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>",
+    f"{pe(PE_COMMAND)} <b>ᴛᴀᴘ ᴀ ᴄᴀᴛᴇɢᴏʀʏ ᴛᴏ ᴠɪᴇᴡ ᴄᴏᴍᴍᴀɴᴅs.</b>",
+])
+
+
+@app.on_callback_query(filters.regex(r"^force_help$"))
+async def force_help(client, query):
     await query.answer()
-    await query.message.edit_caption(COMMANDS.get(key, HELP_TEXT), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 HELP MENU", callback_data="force_help")]]))
+    await query.message.edit_caption(
+        _page_text(0),
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=_markup(0),
+    )
+
+
+@app.on_callback_query(filters.regex(r"^force_page:(\d+)$"))
+async def force_page(client, query):
+    await query.answer()
+    page = int(query.matches[0].group(1))
+    await query.message.edit_caption(
+        _page_text(page),
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=_markup(page),
+    )
