@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.enums import ChatType
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pytgcalls import PyTgCalls
@@ -375,11 +375,11 @@ async def start_background_for_client(client: Client):
 async def _save_recording(client, message):
     uid = getattr(client, "_waste_owner_uid", None)
     if not uid:
-        return await message.reply("<blockquote>❌ Connected account ID not found.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>❌ Connected account ID not found.</blockquote>", parse_mode=enums.ParseMode.HTML)
     media = message.reply_to_message if message.reply_to_message else None
     if not media or not (media.audio or media.voice):
         _pending_recording.add(int(uid))
-        return await message.reply("<blockquote>🎙️ <b>Send your recording now.</b>\n\nThe next audio/voice message you send will be saved as an RC.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>🎙️ <b>Send your recording now.</b>\n\nThe next audio/voice message you send will be saved as an RC.</blockquote>", parse_mode=enums.ParseMode.HTML)
     name = (getattr(media.audio or media.voice, "file_name", None) or "Recording").rsplit("/",1)[-1]
     ext = ".ogg" if media.voice else ".mp3"
     path = os.path.join(RECORDINGS_DIR, f"{uid}_{uuid.uuid4().hex}{ext}")
@@ -387,12 +387,12 @@ async def _save_recording(client, message):
         await media.download(file_name=path)
         doc={"user_id": int(uid), "name": name, "path": path, "created_at": datetime.now(timezone.utc), "duration": int(getattr(media.audio or media.voice, "duration", 0) or 0)}
         result=recordings_col.insert_one(doc)
-        return await message.reply(f"<blockquote>✅ <b>Recording saved</b>\n\n🎙️ {name}\n🆔 <code>{result.inserted_id}</code></blockquote>", parse_mode="HTML")
+        return await message.reply(f"<blockquote>✅ <b>Recording saved</b>\n\n🎙️ {name}\n🆔 <code>{result.inserted_id}</code></blockquote>", parse_mode=enums.ParseMode.HTML)
     except Exception as exc:
         try:
             if os.path.exists(path): os.remove(path)
         except OSError: pass
-        return await message.reply(f"<blockquote>❌ Save failed: <code>{type(exc).__name__}</code></blockquote>", parse_mode="HTML")
+        return await message.reply(f"<blockquote>❌ Save failed: <code>{type(exc).__name__}</code></blockquote>", parse_mode=enums.ParseMode.HTML)
 
 
 def _recording_rows(uid):
@@ -412,7 +412,7 @@ async def recordings_menu(client, message):
         [InlineKeyboardButton("➕ ADD RC", callback_data="rc:add"), InlineKeyboardButton("🗑️ REMOVE RC", callback_data="rc:remove")],
         [InlineKeyboardButton("ℹ️ RC INFO", callback_data="rc:info"), InlineKeyboardButton("📂 MY RC", callback_data="rc:list")],
     ])
-    await message.reply(text, reply_markup=kb, parse_mode="HTML")
+    await message.reply(text, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
 
 @Client.on_message(filters.command("addrc", [".", "/"]) & filters.me)
 async def add_rc(client, message):
@@ -423,19 +423,19 @@ async def my_rc(client, message):
     uid=getattr(client,"_waste_owner_uid",None)
     rows=_recording_rows(uid) if uid else []
     if not rows:
-        return await message.reply("<blockquote>📂 No saved recordings yet.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>📂 No saved recordings yet.</blockquote>", parse_mode=enums.ParseMode.HTML)
     text="<blockquote><b>📂 MY RECORDINGS</b>\n\n" + "\n".join(f"🎙️ <b>{i+1}. {r.get('name','Recording')}</b>" for i,r in enumerate(rows)) + "</blockquote>"
     buttons=[]
     for r in rows:
         buttons.append([InlineKeyboardButton(f"▶️ {r.get('name','Recording')[:30]}", callback_data=f"rc:play:{r['_id']}")])
-    await message.reply(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="HTML")
+    await message.reply(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.HTML)
 
 @Client.on_message(filters.command("bass", [".", "/"]) & filters.me)
 async def bass_command(client, message):
     """Apply a simple bass boost to the selected VC playback source."""
     state, call = await _bridge(client)
     if not state.current:
-        return await message.reply("<blockquote>❌ Join a VC first with <code>.join &lt;group_id&gt;</code>.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>❌ Join a VC first with <code>.join &lt;group_id&gt;</code>.</blockquote>", parse_mode=enums.ParseMode.HTML)
     try:
         level = int(message.command[1]) if len(message.command) > 1 else 100
     except ValueError:
@@ -444,11 +444,11 @@ async def bass_command(client, message):
     gain = (level - 100) / 40.0
     rows = _recording_rows(getattr(client, "_waste_owner_uid", None))
     if not rows:
-        return await message.reply("<blockquote>🎙️ No saved recordings found.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>🎙️ No saved recordings found.</blockquote>", parse_mode=enums.ParseMode.HTML)
     rec = rows[0]
     src = rec.get("path")
     if not src or not os.path.exists(src):
-        return await message.reply("<blockquote>❌ Recording file not found.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>❌ Recording file not found.</blockquote>", parse_mode=enums.ParseMode.HTML)
     out = os.path.join(RECORDINGS_DIR, f"bass_{getattr(client, '_waste_owner_uid', 0)}_{uuid.uuid4().hex}.ogg")
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -459,13 +459,13 @@ async def bass_command(client, message):
         if code != 0 or not os.path.exists(out):
             raise RuntimeError("ffmpeg bass processing failed")
         await call.play(state.current, out, config=GroupCallConfig(auto_start=False))
-        await message.reply(f"<blockquote>🔊 <b>BASS {level}</b>\n\n🎙️ {rec.get('name', 'Recording')}\n▶️ Playing in selected VC.</blockquote>", parse_mode="HTML")
+        await message.reply(f"<blockquote>🔊 <b>BASS {level}</b>\n\n🎙️ {rec.get('name', 'Recording')}\n▶️ Playing in selected VC.</blockquote>", parse_mode=enums.ParseMode.HTML)
         asyncio.create_task(_cleanup_after(out, 3600))
     except Exception as exc:
         try:
             if os.path.exists(out): os.remove(out)
         except OSError: pass
-        await message.reply(f"<blockquote>❌ Bass playback failed: <code>{type(exc).__name__}</code></blockquote>", parse_mode="HTML")
+        await message.reply(f"<blockquote>❌ Bass playback failed: <code>{type(exc).__name__}</code></blockquote>", parse_mode=enums.ParseMode.HTML)
 
 
 async def _cleanup_after(path, seconds):
@@ -481,20 +481,20 @@ async def rc_info(client, message):
     uid=getattr(client,"_waste_owner_uid",None)
     rows=_recording_rows(uid) if uid else []
     if not rows:
-        return await message.reply("<blockquote>ℹ️ No recordings saved.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>ℹ️ No recordings saved.</blockquote>", parse_mode=enums.ParseMode.HTML)
     text="<blockquote><b>ℹ️ RECORDING INFO</b>\n\n"
     for i,r in enumerate(rows):
         text += f"{i+1}. {r.get('name','Recording')} — {int(r.get('duration',0))}s\n"
-    await message.reply(text+"</blockquote>", parse_mode="HTML")
+    await message.reply(text+"</blockquote>", parse_mode=enums.ParseMode.HTML)
 
 @Client.on_message(filters.command("removerc", [".", "/"]) & filters.me)
 async def remove_rc(client, message):
     uid=getattr(client,"_waste_owner_uid",None)
     rows=_recording_rows(uid) if uid else []
     if not rows:
-        return await message.reply("<blockquote>🗑️ No recordings to remove.</blockquote>", parse_mode="HTML")
+        return await message.reply("<blockquote>🗑️ No recordings to remove.</blockquote>", parse_mode=enums.ParseMode.HTML)
     kb=InlineKeyboardMarkup([[InlineKeyboardButton(f"🗑️ {r.get('name','Recording')[:30]}", callback_data=f"rc:delete:{r['_id']}")] for r in rows])
-    await message.reply("<blockquote><b>🗑️ REMOVE RECORDING</b>\n\nSelect a recording.</blockquote>", reply_markup=kb, parse_mode="HTML")
+    await message.reply("<blockquote><b>🗑️ REMOVE RECORDING</b>\n\nSelect a recording.</blockquote>", reply_markup=kb, parse_mode=enums.ParseMode.HTML)
 
 @Client.on_callback_query(filters.regex(r"^rc:"))
 async def recording_callback(client, query):
@@ -512,14 +512,14 @@ async def recording_callback(client, query):
         if not rows:
             return await query.answer("No recordings", show_alert=True)
         text="<blockquote><b>ℹ️ RECORDING INFO</b>\n\n" + "\n".join(f"{i+1}. {r.get('name','Recording')} — {int(r.get('duration',0))}s" for i,r in enumerate(rows)) + "</blockquote>"
-        await query.message.reply(text, parse_mode="HTML")
+        await query.message.reply(text, parse_mode=enums.ParseMode.HTML)
         return await query.answer()
     if action=="remove":
         rows=_recording_rows(uid)
         if not rows:
             return await query.answer("No recordings", show_alert=True)
         kb=InlineKeyboardMarkup([[InlineKeyboardButton(f"🗑️ {r.get('name','Recording')[:30]}", callback_data=f"rc:delete:{r['_id']}")] for r in rows])
-        await query.message.reply("<blockquote><b>🗑️ REMOVE RECORDING</b>\n\nSelect a recording.</blockquote>", reply_markup=kb, parse_mode="HTML")
+        await query.message.reply("<blockquote><b>🗑️ REMOVE RECORDING</b>\n\nSelect a recording.</blockquote>", reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         return await query.answer()
     try:
         from bson import ObjectId
@@ -535,7 +535,7 @@ async def recording_callback(client, query):
             if os.path.exists(rec.get("path","")): os.remove(rec["path"])
         except OSError: pass
         await query.answer("Recording removed", show_alert=True)
-        return await query.message.edit_text("<blockquote>🗑️ Recording removed.</blockquote>", parse_mode="HTML")
+        return await query.message.edit_text("<blockquote>🗑️ Recording removed.</blockquote>", parse_mode=enums.ParseMode.HTML)
     if action=="play":
         state,call=await _bridge(client)
         if not state.current:
@@ -543,7 +543,7 @@ async def recording_callback(client, query):
         try:
             await call.play(state.current, rec["path"], config=GroupCallConfig(auto_start=False))
             await query.answer("Playing in the selected VC", show_alert=True)
-            return await query.message.reply(f"<blockquote>▶️ <b>Now Playing</b>\n\n🎙️ {rec.get('name','Recording')}</blockquote>", parse_mode="HTML")
+            return await query.message.reply(f"<blockquote>▶️ <b>Now Playing</b>\n\n🎙️ {rec.get('name','Recording')}</blockquote>", parse_mode=enums.ParseMode.HTML)
         except Exception as exc:
             return await query.answer(f"Play failed: {type(exc).__name__}", show_alert=True)
 

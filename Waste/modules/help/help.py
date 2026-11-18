@@ -1,122 +1,144 @@
 from pyrogram import Client, filters, enums
+from html import escape
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from Waste import app, CMD_HELP, SUDO_USER
-from config import ALIVE_PIC, ALIVE_VIDEO
+from config import ALIVE_PIC
 
-# Telegram custom emoji IDs supplied for the Waste X Ubot UI.
-EMOJI_MAIN = "5471952986970267163"
-EMOJI_DETAIL = "5445284980978621387"
-EMOJI_QUOTE = "5445284980978621387"
-EMOJI_DEPLOY = "5445284980978621387"
-EMOJI_PAGE = "5226512880362332956"
-EMOJI_MENU = "5989975649740134220"
+FORCE_VIDEO_URL = "https://www.image2url.com/r2/default/videos/1794758121681-9a91954b-c9c6-4323-9fd0-9bf9e42ed0fa.mp4"
+PE = lambda eid, fallback="✦": f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
+PE_USER = 5471952986970267163
+PE_COMMAND = 5992095761561554607
+PE_SUPPORT = 5445284980978621387
+PE_VERIFIED = 5226512880362332956
 
+HELP_MENU = f"""<blockquote>{PE(PE_USER)} <b>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯＴ - ʜᴇʟᴘ ᴍᴇɴᴜ ❁ |</b>
 
-def E(emoji_id: str, fallback: str = "✨") -> str:
-    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+{PE(PE_COMMAND)} <b>Autopic</b>  {PE(PE_COMMAND)} <b>admin</b>
+{PE(PE_COMMAND)} <b>afk</b>  {PE(PE_COMMAND)} <b>animation</b>
+{PE(PE_COMMAND)} <b>anime_cf</b>  {PE(PE_COMMAND)} <b>antipm</b>
+{PE(PE_COMMAND)} <b>autoscroll</b>  {PE(PE_COMMAND)} <b>banall</b>
+{PE(PE_COMMAND)} <b>birthday</b>  {PE(PE_COMMAND)} <b>broadcast</b>
+{PE(PE_COMMAND)} <b>carbon</b>  {PE(PE_COMMAND)} <b>clone</b>
+{PE(PE_COMMAND)} <b>create</b>  {PE(PE_COMMAND)} <b>destruct</b>
+{PE(PE_COMMAND)} <b>dictionary</b>  {PE(PE_COMMAND)} <b>dmspam</b>
+{PE(PE_COMMAND)} <b>emoji</b>  {PE(PE_COMMAND)} <b>flirt</b>
+{PE(PE_COMMAND)} <b>globals</b>  {PE(PE_COMMAND)} <b>google</b>
+{PE(PE_COMMAND)} <b>info</b>  {PE(PE_COMMAND)} <b>invite</b>
+{PE(PE_COMMAND)} <b>joinleave</b>  {PE(PE_COMMAND)} <b>locks</b>
+{PE(PE_COMMAND)} <b>memify</b>  {PE(PE_COMMAND)} <b>mention</b>
+{PE(PE_COMMAND)} <b>metrics</b>  {PE(PE_COMMAND)} <b>paste</b>
+{PE(PE_COMMAND)} <b>pats</b>  {PE(PE_COMMAND)} <b>ping</b>
+{PE(PE_COMMAND)} <b>profile</b>  {PE(PE_COMMAND)} <b>purge</b>
+{PE(PE_COMMAND)} <b>quotly</b>  {PE(PE_COMMAND)} <b>raid</b>
+{PE(PE_COMMAND)} <b>replyraid</b>  {PE(PE_COMMAND)} <b>restart</b>
+{PE(PE_COMMAND)} <b>sangmata</b>  {PE(PE_COMMAND)} <b>screenshot</b>
+{PE(PE_COMMAND)} <b>spam</b>  {PE(PE_COMMAND)} <b>start</b>
+{PE(PE_COMMAND)} <b>stats</b>  {PE(PE_COMMAND)} <b>sticker</b>
+{PE(PE_COMMAND)} <b>stickers</b>  {PE(PE_COMMAND)} <b>sudos</b>
+{PE(PE_COMMAND)} <b>tag</b>  {PE(PE_COMMAND)} <b>tagalert</b>
+{PE(PE_COMMAND)} <b>tagall</b>  {PE(PE_COMMAND)} <b>text</b>
+{PE(PE_COMMAND)} <b>tiny</b>  {PE(PE_COMMAND)} <b>translate</b>
+{PE(PE_COMMAND)} <b>truth-dare</b>  {PE(PE_COMMAND)} <b>update</b>
+{PE(PE_COMMAND)} <b>upload</b>  {PE(PE_COMMAND)} <b>vctools</b>
+{PE(PE_COMMAND)} <b>vulgar</b>  {PE(PE_COMMAND)} <b>waifu</b>
+{PE(PE_COMMAND)} <b>weather</b>  {PE(PE_COMMAND)} <b>VcFight</b>
+{PE(PE_COMMAND)} <b>promotion</b>  {PE(PE_COMMAND)} <b>aichat</b>
+{PE(PE_COMMAND)} <b>Music</b>  {PE(PE_COMMAND)} <b>AutoTextPromo</b>
 
+{PE(PE_SUPPORT)} <b>@wasteBotz</b>  ×  <b>@wasteuserbotUpdates</b></blockquote>"""
 
-HELP_COMMANDS = [
-    "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall",
-    "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam",
-    "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify",
-    "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid",
-    "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker",
-    "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare",
-    "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "Music",
-    "VcFight", "AutoTextPromo", "VcTalk", "Reactions",
+FORCE_TEXT = f"""<blockquote>{PE(PE_USER)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
+
+FORCE_CHANNELS = [
+    ("wasteBotz", "Ｓᴜᴘᴘᴏʀᴛ ᴄʜᴀɴɴᴇʟ"),
+    ("wasteuserbotUpdates", "Ｕᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ"),
 ]
-PAGE_SIZE = 10
 
 
-def _page_commands(page: int):
-    page = max(1, min(6, page))
-    return HELP_COMMANDS[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
+FORCE_COMMANDS = [
+    "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone",
+    "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks",
+    "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart",
+    "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text",
+    "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "VcFight", "promotion", "aichat",
+    "Music", "AutoTextPromo"
+]
 
+def _ser_name(name):
+    mapping = str.maketrans({
+        'a':'𝙖','b':'𝙗','c':'𝙘','d':'𝙙','e':'𝙚','f':'𝙛','g':'𝙜','h':'𝙝','i':'𝙞','j':'𝙟','k':'𝙠','l':'𝙡','m':'𝙢',
+        'n':'𝙣','o':'𝙤','p':'𝙥','q':'𝙦','r':'𝙧','s':'𝙨','t':'𝙩','u':'𝙪','v':'𝙫','w':'𝙬','x':'𝙭','y':'𝙮','z':'𝙯',
+        'A':'𝙰','B':'𝙱','C':'𝙲','D':'𝙳','E':'𝙴','F':'𝙵','G':'𝙶','H':'𝙷','I':'𝙸','J':'𝙹','K':'𝙺','L':'𝙻','M':'𝙼',
+        'N':'𝙽','O':'𝙾','P':'𝙿','Q':'𝚀','R':'𝚁','S':'𝚂','T':'𝚃','U':'𝚄','V':'𝚅','W':'𝚆','X':'𝚇','Y':'𝚈','Z':'𝚉'
+    })
+    return str(name).translate(mapping)
 
-def _help_page_text(page: int) -> str:
-    commands = _page_commands(page)
-    lines = [
-        f"<blockquote>{E(EMOJI_MAIN, '✨')} <b>ＷＡＳＴＥ Ｘ ᴜʙᴏᴛ — 𝐅𝐎𝐑𝐂𝐄 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒</b>",
-        "",
-        f"{E(EMOJI_DETAIL, '🔹')} <b>ᴘᴀɢᴇ {page}/6</b>",
-        f"{E(EMOJI_DETAIL, '🔹')} ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴅᴇᴛᴀɪʟs.",
-        "",
-    ]
-    for name in commands:
-        lines.append(f"{E(EMOJI_MAIN, '📌')} <code>{name}</code>")
+def _force_page_text(page=0):
+    page = max(0, min(int(page), 5))
+    chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
+    lines = [f"<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>", ""]
+    lines.extend(f"{PE(PE_COMMAND)} <b>{_ser_name(name)}</b>" for name in chunks[page])
     lines.append("</blockquote>")
     return "\n".join(lines)
 
-
-def _help_page_keyboard(page: int):
+def _force_keyboard(page=0):
+    page = max(0, min(int(page), 5))
+    chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
     rows = []
-    commands = _page_commands(page)
-    for i in range(0, len(commands), 2):
-        row = [InlineKeyboardButton(f"{commands[i]}", callback_data=f"grouphelp:{commands[i]}")]
-        if i + 1 < len(commands):
-            row.append(InlineKeyboardButton(f"{commands[i+1]}", callback_data=f"grouphelp:{commands[i+1]}"))
+    chunk = chunks[page]
+    for i in range(0, len(chunk), 2):
+        row = [InlineKeyboardButton(_ser_name(chunk[i]), callback_data=f"force_mod:{chunk[i]}")]
+        if i + 1 < len(chunk):
+            row.append(InlineKeyboardButton(_ser_name(chunk[i+1]), callback_data=f"force_mod:{chunk[i+1]}"))
         rows.append(row)
-    nav = []
-    if page > 1:
-        nav.append(InlineKeyboardButton("ᴘʀᴇᴠ", callback_data=f"help_page:{page-1}"))
-    nav.append(InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="help_page:noop"))
-    if page < 6:
-        nav.append(InlineKeyboardButton("ᴅᴇᴘʟᴏʏ ➡️", callback_data=f"help_page:{page+1}"))
+    nav=[]
+    if page > 0:
+        nav.append(InlineKeyboardButton("ʙᴀᴄᴋ", callback_data=f"force_page:{page-1}"))
+    nav.append(InlineKeyboardButton(f"ᴘᴀɢᴇ {page+1}/6", callback_data="force_noop"))
+    if page < 5:
+        nav.append(InlineKeyboardButton("ɴᴇxᴛ", callback_data=f"force_page:{page+1}"))
     rows.append(nav)
-    rows.append([InlineKeyboardButton("ᴍᴀɪɴ ᴍᴇɴᴜ", callback_data="force_menu")])
-    return InlineKeyboardMarkup(rows)
-
-
-FORCE_TEXT = f"""<blockquote>{E(EMOJI_MAIN, '✨')} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
-
-{E(EMOJI_DETAIL, '🔹')} ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ/ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.
-{E(EMOJI_DETAIL, '🔹')} ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.
-{E(EMOJI_DETAIL, '🔹')} ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.
-{E(EMOJI_DETAIL, '🔹')} ᴜsᴇ <code>.help &lt;command&gt;</code> ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</blockquote>"""
-
-HELP_MENU = _help_page_text(1)
-
-
-def _force_keyboard():
-    rows = [
-        [InlineKeyboardButton("ᴍᴜsɪᴄ / sᴏɴɢ", callback_data="force_mod:Music"), InlineKeyboardButton("ᴠᴄғɪɢʜᴛ", callback_data="force_mod:VcFight")],
-        [InlineKeyboardButton("ʀᴇᴄᴏʀᴅɪɴɢs", callback_data="force_recordings"), InlineKeyboardButton("ᴀᴜᴛᴏᴛᴇxᴛᴘʀᴏᴍᴏ", callback_data="force_mod:AutoTextPromo")],
-        [InlineKeyboardButton("ᴅᴇᴘʟᴏʏ ➡️", callback_data="help_page:2")],
-        [InlineKeyboardButton("ᴍᴀɪɴ ᴍᴇɴᴜ", callback_data="force_help")],
-    ]
+    rows.append([InlineKeyboardButton("ᴍᴀɪɴ ᴍᴇɴᴜ", callback_data="force_help")])
     return InlineKeyboardMarkup(rows)
 
 
 def _recordings_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("ᴀᴅᴅʀᴄ", callback_data="force_record:addrc"), InlineKeyboardButton("ʀᴇᴍᴏᴠᴇʀᴄ", callback_data="force_record:removerc")],
-        [InlineKeyboardButton("ᴍʏʀᴄ", callback_data="force_record:myrc"), InlineKeyboardButton("ʀᴄɪɴғᴏ", callback_data="force_record:rcinfo")],
-        [InlineKeyboardButton("ʙᴀss 100–500", callback_data="force_record:bass")],
-        [InlineKeyboardButton("ғᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")],
+        [InlineKeyboardButton("𝙖𝙙𝙙𝙧𝙘", callback_data="force_record:addrc"), InlineKeyboardButton("𝙧𝙚𝙢𝙤𝙫𝙚𝙧𝙘", callback_data="force_record:removerc")],
+        [InlineKeyboardButton("𝙢𝙮𝙧𝙘", callback_data="force_record:myrc"), InlineKeyboardButton("𝙧𝙘𝙞𝙣𝙛𝙤", callback_data="force_record:rcinfo")],
+        [InlineKeyboardButton("𝙗𝙖𝙨𝙨 100–500", callback_data="force_record:bass")],
+        [InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")],
     ])
 
 
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("ᴅᴇᴘʟᴏʏ sᴜᴘᴘᴏʀᴛ ➜", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("ᴅᴇᴘʟᴏʏ ᴜᴘᴅᴀᴛᴇs ➜", url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton("ᴅᴇᴘʟᴏʏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ", callback_data="force_check")],
+        [InlineKeyboardButton("Ｓᴜᴘᴘᴏʀᴛ", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton("Ｕᴘᴅᴀᴛᴇs", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton("Ｖᴇʀɪғɪᴇᴅ", callback_data="force_check")],
     ])
 
 
-def _force_join_text():
-    return f"""<blockquote>{E(EMOJI_MAIN, '✨')} <b>⚡ WASTE X 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓 👑</b>
+def _force_join_text(user_id=None, name="User"):
+    active = False
+    if user_id is not None:
+        try:
+            from Waste.modules.bot.start import active_sessions
+            active = any(getattr(c, "_waste_owner_uid", None) == int(user_id) for c in active_sessions)
+        except Exception:
+            active = False
+    status = "ᴀᴄᴛɪᴠᴇ" if active else "ɪɴᴀᴄᴛɪᴠᴇ"
+    return f"""<blockquote>{PE(PE_USER)} <b>ＷＡＳＴＥ Ｘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐇𝐎𝐒𝐓</b>
 
-{E(EMOJI_DETAIL, '👤')} ᴜꜱᴇʀ : <b>𝐉 𝐏 𝐄 𝐗 𝐎 🚩</b>
+{PE(PE_USER)} <b>ᴜꜱᴇʀ : {name}</b>
+{PE(PE_USER)} <b>ꜱᴛᴀᴛᴜꜱ : {status}</b>
 
-{E(EMOJI_DETAIL, '💎')} ꜱᴛᴀᴛᴜꜱ : ❌ ɪɴᴀᴄᴛɪᴠᴇ
+{PE(PE_USER)} <b>ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.</b>
 
-{E(EMOJI_DETAIL, '🚀')} ᴡᴇʟᴄᴏᴍᴇ! ᴅᴇᴘʟᴏʏ ʏᴏᴜʀ ᴘᴇʀꜱᴏɴᴀʟ ᴜꜱᴇʀʙᴏᴛ ɪɴꜱᴛᴀɴᴛʟʏ ᴡɪᴛʜ ꜱᴇᴄᴜʀᴇ ᴏᴛᴘ ʟᴏɢɪɴ.
+{PE(PE_SUPPORT)} <b>ᴊᴏɪɴ sᴜᴘᴘᴏʀᴛ + ᴜᴘᴅᴀᴛᴇs ᴛᴏ ᴜɴʟᴏᴄᴋ ᴀᴄᴄᴇss.</b>
+{PE(PE_VERIFIED)} <b>ᴀғᴛᴇʀ ᴊᴏɪɴɪɴɢ, ᴛᴀᴘ ᴠᴇʀɪғɪᴇᴅ ᴛᴏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ.</b></blockquote>"""
 
-{E(EMOJI_DEPLOY, '✨')} ᴊᴏɪɴ ʙᴏᴛʜ ᴏꜰꜰɪᴄɪᴀʟ ᴄʜᴀɴɴᴇʟꜱ ʙᴇʟᴏᴡ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ.
 
-{E(EMOJI_DEPLOY, '✨')} ᴘʀᴇꜱꜱ <b>ᴅᴇᴘʟᴏʏ ᴄʜᴇᴄᴋ ᴀɢᴀɪɴ</b> ᴀꜰᴛᴇʀ ᴊᴏɪɴɪɴɢ.</blockquote>"""
 async def _joined(client, user_id):
     for chat in ("@wasteBotz", "@wasteuserbotUpdates"):
         try:
@@ -131,55 +153,166 @@ async def _joined(client, user_id):
 
 
 async def _send_force_join(client, message):
-    if ALIVE_VIDEO:
-        try:
-            return await message.reply_video(ALIVE_VIDEO, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="HTML")
-        except Exception:
-            pass
+    name = escape(str(getattr(message.from_user, "first_name", None) or getattr(message.from_user, "username", None) or "User")) if getattr(message, "from_user", None) else "User"
+    text = _force_join_text(getattr(message.from_user, "id", None), name)
     try:
-        return await message.reply_photo(ALIVE_PIC, caption=_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="HTML")
+        await message.reply_video(FORCE_VIDEO_URL, caption=text, reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
     except Exception:
-        return await message.reply_text(_force_join_text(), reply_markup=_force_join_keyboard(), parse_mode="HTML")
+        try:
+            await message.reply_photo(ALIVE_PIC, caption=text, reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
+        except Exception:
+            await message.reply_text(text, reply_markup=_force_join_keyboard(), parse_mode=enums.ParseMode.HTML)
 
 
 def _group_help_keyboard():
-    return _help_page_keyboard(1)
+    explicit = ["Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct", "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite", "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "promotion", "aichat", "vctalk", "autoreact", "mmar", "omar", "Music", "VcFight", "AutoTextPromo"]
+    keys = list(dict.fromkeys(explicit + list(CMD_HELP.keys())))
+    rows = []
+    for i in range(0, len(keys), 2):
+        row = [InlineKeyboardButton(keys[i], callback_data=f"grouphelp:{keys[i]}")]
+        if i + 1 < len(keys):
+            row.append(InlineKeyboardButton(keys[i + 1], callback_data=f"grouphelp:{keys[i + 1]}"))
+        rows.append(row)
+    return InlineKeyboardMarkup(rows)
 
+
+MODULE_ALIASES = {
+    "music": "Music", "song": "Music", "play": "Music",
+    "autotextpromo": "AutoTextPromo", "autotext": "AutoTextPromo",
+    "vcfight": "VcFight", "vc fight": "VcFight", "recordings": "VcFight", "record": "VcFight",
+    "aichat": "AI Chat", "ai chat": "AI Chat",
+    "welcome": "Welcome", "promotion": "Promotion",
+    "autopic": "Autopic",
+    "vctalk": "VcTalk", "vc talk": "VcTalk",
+    "autoreact": "Promotion", "mmar": "ReactionPlus", "omar": "ReactionPlus",
+}
+
+# Modules that may not register a CMD_HELP block still get a useful usage page.
+MODULE_FALLBACKS = {
+    "AutoTextPromo": [
+        ("autotextpromo on", "Enable automatic promotional text."),
+        ("autotextpromo off", "Disable automatic promotional text."),
+    ],
+    "AI Chat": [
+        ("aichat on", "Enable AI replies."),
+        ("aichat off", "Disable AI replies."),
+        ("aichat status", "Show the current AI-chat status."),
+    ],
+    "Welcome": [
+        ("welcome on", "Enable automatic welcome messages."),
+        ("welcome off", "Disable automatic welcome messages."),
+    ],
+    "VcTalk": [
+        ("vctalk on", "Enable AI voice conversation in the current VC."),
+        ("vctalk off", "Disable AI voice conversation in the current VC."),
+        ("vctalk status", "Show VC Talk status."),
+    ],
+    "ReactionPlus": [
+        ("mmar on 😂😭😑🤣💔🖕🍌", "React to your own messages with the selected emoji pool."),
+        ("mmar off", "Disable reactions on your own messages."),
+        ("omar on @username", "Target a user and react to their messages."),
+        ("omar on 123456789", "Target a user by ID and react to their messages."),
+        ("omar off", "Disable target reactions."),
+    ],
+}
+
+# Every command displayed in the Force Commands menu gets a usable help page,
+# even when its legacy module has no CMD_HELP registration.
+_GENERIC_COMMANDS = [
+    "autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll",
+    "banall", "birthday", "broadcast", "carbon", "clone", "create", "destruct",
+    "dictionary", "dmspam", "emoji", "flirt", "globals", "google", "info", "invite",
+    "joinleave", "locks", "memify", "mention", "metrics", "paste", "pats", "ping",
+    "profile", "purge", "quotly", "raid", "replyraid", "restart", "sangmata",
+    "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag",
+    "tagalert", "tagall", "text", "tiny", "translate", "truth-dare", "update",
+    "upload", "vctools", "vulgar", "waifu", "weather",
+]
+for _cmd in _GENERIC_COMMANDS:
+    _key = _cmd
+    MODULE_FALLBACKS.setdefault(_key, [
+        (_cmd, f"Use <code>.{_cmd}</code> or <code>/{_cmd}</code>. This command is available from the connected userbot.")
+    ])
 
 def _find_help_key(name: str):
-    name = (name or "").strip().lower()
-    aliases = {"music": "Music", "song": "Music", "play": "Music", "autotextpromo": "AutoTextPromo", "autotext": "AutoTextPromo", "vcfight": "VcFight", "recordings": "VcFight", "record": "VcFight", "vctalk": "VcTalk", "mmar": "Reactions", "omar": "Reactions"}
-    if name in aliases:
-        return aliases[name]
+    """Resolve a module name, command name, or common alias reliably."""
+    name = (name or "").strip().lower().lstrip("./")
+    if not name:
+        return None
+    if name in MODULE_ALIASES:
+        return MODULE_ALIASES[name]
+    # Exact module-name match, case-insensitive.
     for key in CMD_HELP:
-        if key.lower() == name:
+        if str(key).strip().lower() == name:
             return key
-    return None
+    # Match a registered command (including commands with arguments).
+    for key, commands in CMD_HELP.items():
+        iterable = commands.keys() if isinstance(commands, dict) else [x[0] for x in commands if x]
+        for command in iterable:
+            first = str(command).strip().lstrip("./").split()[0].lower()
+            if first == name:
+                return key
+    # Finally, resolve every module shown in the force menu even if that
+    # module did not register CMD_HELP yet. This prevents `.help <command>`
+    # from falling through to the old "Not a Valid Module Name" response.
+    explicit = {
+        "autopic":"Autopic", "admin":"admin", "afk":"afk",
+        "animation":"animation", "anime_cf":"anime_cf", "antipm":"antipm",
+        "autoscroll":"autoscroll", "banall":"banall", "birthday":"birthday",
+        "broadcast":"broadcast", "carbon":"carbon", "clone":"clone",
+        "create":"create", "destruct":"destruct", "dictionary":"dictionary",
+        "dmspam":"dmspam", "emoji":"emoji", "flirt":"flirt", "globals":"globals",
+        "google":"google", "info":"info", "invite":"invite", "joinleave":"joinleave",
+        "locks":"locks", "memify":"memify", "mention":"mention", "metrics":"metrics",
+        "paste":"paste", "pats":"pats", "ping":"ping", "profile":"profile",
+        "purge":"purge", "quotly":"quotly", "raid":"raid", "replyraid":"replyraid",
+        "restart":"restart", "sangmata":"sangmata", "screenshot":"screenshot",
+        "spam":"spam", "start":"start", "stats":"stats", "sticker":"sticker",
+        "stickers":"stickers", "sudos":"sudos", "tag":"tag", "tagalert":"tagalert",
+        "tagall":"tagall", "text":"text", "tiny":"tiny", "translate":"translate",
+        "truth-dare":"truth-dare", "update":"update", "upload":"upload",
+        "vctools":"vctools", "vulgar":"vulgar", "waifu":"waifu", "weather":"weather",
+        "promotion":"Promotion", "aichat":"AI Chat", "vctalk":"VcTalk",
+        "autoreact":"Promotion", "mmar":"ReactionPlus", "omar":"ReactionPlus",
+        "music":"Music", "song":"Music", "play":"Music", "vcfight":"VcFight",
+        "recordings":"VcFight", "record":"VcFight", "autotextpromo":"AutoTextPromo",
+        "autotext":"AutoTextPromo", "welcome":"Welcome",
+    }
+    return explicit.get(name)
 
 
 def _module_text(key):
     commands = CMD_HELP.get(key, {})
+    if commands and not isinstance(commands, dict):
+        try:
+            commands = dict(commands)
+        except Exception:
+            commands = {}
     if not commands:
-        if key == "AutoTextPromo":
-            commands = {"autotextpromo": "Premium: `.autotextpromo on/off` — sends a different casual text every 30 minutes."}
-        else:
-            return f"<blockquote>{E(EMOJI_DETAIL, '❌')} <b>{key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
-    lines = [f"<blockquote>{E(EMOJI_DETAIL, '✦')} <b>{key.upper()} COMMANDS</b></blockquote>", ""]
+        commands = dict(MODULE_FALLBACKS.get(key, []))
+    if not commands:
+        return f"<blockquote>{PE(PE_USER)} <b>{key}</b>\n\nNo command details are registered for this module yet.</blockquote>"
+    lines = [f"<blockquote>{PE(PE_USER)} <b>❖ {key.upper()} COMMANDS</b></blockquote>", ""]
     for command, desc in commands.items():
-        lines.append(f"<blockquote>{E(EMOJI_QUOTE, '✦')} <code>.{command}</code>  |  <code>/{command}</code>\n  {desc}</blockquote>")
+        command = str(command).strip()
+        if command.startswith((".", "/")):
+            display = command
+        else:
+            display = f".{command}"
+        slash = display.replace(".", "/", 1) if display.startswith(".") else display
+        lines.append(f"<blockquote>{PE(PE_COMMAND)} <code>{display}</code>  |  <code>{slash}</code>\n{PE(PE_USER)}  {desc}</blockquote>")
     return "\n".join(lines)
 
 
 @Client.on_message(filters.command("force", [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
 async def force_command(client, message):
-    if not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
+    is_private = bool(message.chat and getattr(message.chat.type, "value", message.chat.type) == "private")
+    if is_private and not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
         return await _send_force_join(client, message)
     try:
-        if ALIVE_VIDEO:
-            return await message.reply_video(ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
-        return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+        return await message.reply_video(FORCE_VIDEO_URL, caption=_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True)
     except Exception:
-        return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+        return await message.reply_text(_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
 
 
 @Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
@@ -191,101 +324,190 @@ async def module_help(client: Client, message: Message):
         if not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
             return await _send_force_join(client, message)
         if not help_arg:
-            try:
-                if ALIVE_VIDEO:
-                    return await message.reply_video(ALIVE_VIDEO, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
-                return await message.reply_photo(ALIVE_PIC, caption=FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
-            except Exception:
-                return await message.reply_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+            return await message.reply_text(
+                HELP_MENU,
+                parse_mode=enums.ParseMode.HTML,
+                reply_markup=_group_help_keyboard(),
+            )
 
     if not help_arg:
-        return await message.reply_text(_help_page_text(1), parse_mode=enums.ParseMode.HTML, reply_markup=_help_page_keyboard(1))
+        return await message.reply_text(
+            HELP_MENU,
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=_group_help_keyboard(),
+        )
 
     key = _find_help_key(help_arg)
     if key:
-        return await message.reply_text(_module_text(key), parse_mode="HTML")
+        return await message.reply_text(_module_text(key), parse_mode=enums.ParseMode.HTML)
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
 
-@Client.on_callback_query(filters.regex(r"^(grouphelp:|help_page:)"))
+@Client.on_callback_query(filters.regex(r"^grouphelp:"))
 async def group_help_callback(client, query):
     await query.answer()
-    if query.data.startswith("help_page:"):
-        raw = query.data.split(":", 1)[1]
-        if raw == "noop":
-            return
-        page = int(raw)
-        try:
-            return await query.message.edit_caption(_help_page_text(page), reply_markup=_help_page_keyboard(page), parse_mode="HTML")
-        except Exception:
-            return await query.message.edit_text(_help_page_text(page), reply_markup=_help_page_keyboard(page), parse_mode="HTML")
     key = query.data.split(":", 1)[1]
     if key == "menu":
-        try:
-            return await query.message.edit_caption(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="HTML")
-        except Exception:
-            return await query.message.edit_text(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="HTML")
+        await query.message.edit_text(HELP_MENU, reply_markup=_group_help_keyboard(), parse_mode=enums.ParseMode.HTML)
+        return
     text = _module_text(key)
+    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ＡＬＬ Ｃᴏᴍᴍᴀɴᴅs", callback_data="grouphelp:menu")]]), parse_mode=enums.ParseMode.HTML)
+
+async def _hosted_for_user(user_id):
     try:
-        await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs", callback_data="help_page:1")]]), parse_mode="HTML")
+        from Waste.modules.bot.start import active_sessions
+        for hosted in list(active_sessions):
+            if getattr(hosted, "_waste_owner_uid", None) == int(user_id):
+                return hosted
     except Exception:
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs", callback_data="help_page:1")]]), parse_mode="HTML")
+        pass
+    return None
 
 
-@Client.on_callback_query(filters.regex(r"^force_(menu|help|check|recordings|mod:|record:)"))
+def _force_recordings_keyboard(user_id):
+    try:
+        from Waste.modules.bot.start import recordings_col
+        rows = list(recordings_col.find({"user_id": int(user_id)}).sort("created_at", -1).limit(30))
+    except Exception:
+        rows = []
+    buttons = []
+    for r in rows:
+        rid = str(r.get("_id"))
+        name = str(r.get("name", "Recording"))[:30]
+        buttons.append([InlineKeyboardButton(f"{name}", callback_data=f"force_rcplay:{rid}")])
+    buttons.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_menu")])
+    return rows, InlineKeyboardMarkup(buttons)
+
+
+@Client.on_callback_query(filters.regex(r"^force_(menu|help|check|noop|page:|recordings|mod:|record:|rcdelete:|vcplay:|rcplay:)"))
 async def force_callback(client, query):
     user_id = query.from_user.id
     if query.data == "force_check":
         if not await _joined(client, user_id):
             await query.answer("Join both channels first.", show_alert=True)
             return
-        await query.answer("Verified ✓")
+        await query.answer("Verified successfully")
         try:
-            await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_keyboard())
+            await query.message.edit_media(__import__("pyrogram").types.InputMediaVideo(FORCE_VIDEO_URL, caption=_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_force_keyboard(0))
         except Exception:
-            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+            await query.message.edit_text(_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_help":
         await query.answer()
         try:
-            await query.message.edit_caption(_help_page_text(1), reply_markup=_help_page_keyboard(1))
+            await query.message.edit_caption(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         except Exception:
-            await query.message.edit_text(_help_page_text(1), reply_markup=_help_page_keyboard(1), parse_mode="HTML")
+            await query.message.edit_text(HELP_MENU, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_menu":
         await query.answer()
         try:
-            await query.message.edit_caption(FORCE_TEXT, reply_markup=_force_keyboard())
+            await query.message.edit_media(__import__("pyrogram").types.InputMediaVideo(FORCE_VIDEO_URL, caption=_force_page_text(0), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_force_keyboard(0))
         except Exception:
-            await query.message.edit_text(FORCE_TEXT, reply_markup=_force_keyboard(), parse_mode="HTML")
+            await query.message.edit_text(_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
+        return
+    if query.data == "force_noop":
+        await query.answer()
+        return
+    if query.data.startswith("force_page:"):
+        page = int(query.data.split(":", 1)[1])
+        await query.answer()
+        try:
+            await query.message.edit_media(__import__("pyrogram").types.InputMediaVideo(FORCE_VIDEO_URL, caption=_force_page_text(page), parse_mode=enums.ParseMode.HTML, supports_streaming=True), reply_markup=_force_keyboard(page))
+        except Exception:
+            await query.message.edit_text(_force_page_text(page), reply_markup=_force_keyboard(page), parse_mode=enums.ParseMode.HTML)
         return
     if query.data.startswith("force_mod:"):
         key = query.data.split(":", 1)[1]
         await query.answer()
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")]])
-        try:
-            await query.message.edit_caption(_module_text(key), reply_markup=kb, parse_mode="HTML")
-        except Exception:
-            await query.message.edit_text(_module_text(key), reply_markup=kb, parse_mode="HTML")
-        return
-    if query.data.startswith("force_record:"):
-        await query.answer()
-        action = query.data.split(":", 1)[1]
-        descriptions = {"bass": "<blockquote>🔊 <b>BASS</b>\n\nUse <code>.bass 100</code> through <code>.bass 500</code>.</blockquote>"}
-        text = descriptions.get(action, "<blockquote>Use the corresponding recording command from the menu.</blockquote>")
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 RECORDINGS", callback_data="force_recordings")]])
-        try:
-            await query.message.edit_caption(text, reply_markup=kb, parse_mode="HTML")
-        except Exception:
-            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+        await query.message.edit_caption(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML) if getattr(query.message, "photo", None) else await query.message.edit_text(_module_text(key), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Ｆᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs", callback_data="force_menu")]]), parse_mode=enums.ParseMode.HTML)
         return
     if query.data == "force_recordings":
         await query.answer()
-        text = "<blockquote>🎙️ <b>VCFIGHT RECORDINGS</b>\n\nManage your saved recordings below.</blockquote>"
+        text = f"<blockquote>{PE(PE_COMMAND)} <b>ᴠᴄғɪɢʜᴛ ʀᴇᴄᴏʀᴅɪɴɢs</b>\n\n{PE(PE_USER)} <b>ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴇʀᴇ.</b></blockquote>"
+        return await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode=enums.ParseMode.HTML)
+    if query.data.startswith("force_record:"):
+        await query.answer()
+        action = query.data.split(":", 1)[1]
+        hosted = await _hosted_for_user(user_id)
+        if not hosted:
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ᴏɴʟɪɴᴇ.</b></blockquote>", parse_mode=enums.ParseMode.HTML)
+        if action == "addrc":
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ᴀᴅᴅʀᴄ</b>\n\nꜱᴇɴᴅ ᴀɴ ᴀᴜᴅɪᴏ / ᴠᴏɪᴄᴇ ᴛᴏ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ᴄʜᴀᴛ ᴏʀ ᴜsᴇ <code>.addrc</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+        if action in {"myrc", "rcinfo", "removerc"}:
+            try:
+                from Waste.modules.bot.start import recordings_col
+                rows = list(recordings_col.find({"user_id": int(user_id)}).sort("created_at", -1).limit(30))
+            except Exception:
+                rows = []
+            if not rows:
+                return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} ɴᴏ sᴀᴠᴇᴅ ʀᴇᴄᴏʀᴅɪɴɢs.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+            if action == "rcinfo":
+                text = "<blockquote>" + PE(PE_COMMAND) + " <b>ʀᴇᴄᴏʀᴅɪɴɢ ɪɴғᴏ</b>\n\n" + "\n".join(f"{i+1}. {r.get('name','Recording')} — {int(r.get('duration',0))}s" for i,r in enumerate(rows)) + "</blockquote>"
+                return await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+            buttons=[]
+            for r in rows:
+                rid=str(r.get("_id")); name=str(r.get("name","Recording"))[:30]
+                cb = f"force_rcplay:{rid}" if action == "myrc" else f"force_rcdelete:{rid}"
+                buttons.append([InlineKeyboardButton(f"{name}", callback_data=cb)])
+            buttons.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")])
+            title = "📂 ᴍʏ ʀᴇᴄᴏʀᴅɪɴɢs" if action == "myrc" else "🗑️ ʀᴇᴍᴏᴠᴇ ʀᴇᴄᴏʀᴅɪɴɢ"
+            return await query.message.edit_text(f"<blockquote>{PE(PE_COMMAND)} <b>{title}</b>\n\nꜱᴇʟᴇᴄᴛ ᴀ ʀᴇᴄᴏʀᴅɪɴɢ.</blockquote>", reply_markup=InlineKeyboardMarkup(buttons), parse_mode=enums.ParseMode.HTML)
+        if action == "bass":
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ʙᴀss</b>\n\nᴜsᴇ <code>.bass 100</code> ᴛᴏ <code>.bass 500</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+        return
+    if query.data.startswith("force_rcdelete:"):
+        await query.answer()
         try:
-            await query.message.edit_caption(text, reply_markup=_recordings_keyboard(), parse_mode="HTML")
-        except Exception:
-            await query.message.edit_text(text, reply_markup=_recordings_keyboard(), parse_mode="HTML")
+            from bson import ObjectId
+            from Waste.modules.bot.start import recordings_col
+            rid = ObjectId(query.data.split(":", 1)[1])
+            rec = recordings_col.find_one({"_id": rid, "user_id": int(user_id)})
+            if not rec:
+                return await query.answer("Recording not found", show_alert=True)
+            recordings_col.delete_one({"_id": rid, "user_id": int(user_id)})
+            try:
+                import os
+                if rec.get("path") and os.path.exists(rec["path"]): os.remove(rec["path"])
+            except Exception:
+                pass
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} ʀᴇᴄᴏʀᴅɪɴɢ ʀᴇᴍᴏᴠᴇᴅ.</blockquote>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")]]), parse_mode=enums.ParseMode.HTML)
+        except Exception as exc:
+            return await query.answer(f"Delete failed: {type(exc).__name__}", show_alert=True)
+    if query.data.startswith("force_rcplay:"):
+        await query.answer()
+        try:
+            from bson import ObjectId
+            from Waste.modules.bot.start import recordings_col
+            from Waste.modules.basic.vcfight import _bridge, _states
+            rid = ObjectId(query.data.split(":", 1)[1])
+            rec = recordings_col.find_one({"_id": rid, "user_id": int(user_id)})
+            if not rec:
+                return await query.answer("Recording not found", show_alert=True)
+            state, call = await _bridge(hosted)
+            joined = sorted(list(state.joined))
+            if not joined:
+                return await query.message.edit_text("<blockquote>❌ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ɴᴏᴛ ɪɴ ᴀɴʏ ᴠᴄ. ᴜsᴇ <code>.join &lt;chat_id&gt;</code> ᴏɴ ᴛʜᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғɪʀsᴛ.</blockquote>", parse_mode=enums.ParseMode.HTML)
+            kb=[[InlineKeyboardButton(f"ᴘʟᴀʏ ɪɴ {cid}", callback_data=f"force_vcplay:{rid}:{cid}")] for cid in joined]
+            kb.append([InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="force_recordings")])
+            return await query.message.edit_text(f"<blockquote>{PE(PE_COMMAND)} <b>ᴄʜᴏᴏsᴇ ᴠᴄ</b>\n\n🎙️ {rec.get('name','Recording')}</blockquote>", reply_markup=InlineKeyboardMarkup(kb), parse_mode=enums.ParseMode.HTML)
+        except Exception as exc:
+            return await query.answer(f"Play menu failed: {type(exc).__name__}", show_alert=True)
+    if query.data.startswith("force_vcplay:"):
+        await query.answer()
+        try:
+            from bson import ObjectId
+            from Waste.modules.bot.start import recordings_col
+            from Waste.modules.basic.vcfight import _bridge
+            _, call = await _bridge(hosted)
+            _, rid, cid = query.data.split(":", 2)
+            rec = recordings_col.find_one({"_id": ObjectId(rid), "user_id": int(user_id)})
+            if not rec:
+                return await query.answer("Recording not found", show_alert=True)
+            await call.play(int(cid), rec["path"], config=__import__("pytgcalls").types.GroupCallConfig(auto_start=False))
+            return await query.message.edit_text(f"<blockquote>{PE(PE_USER)} <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n{PE(PE_USER)} {rec.get('name','Recording')}\n{PE(PE_USER)} ᴠᴄ: <code>{cid}</code></blockquote>", parse_mode=enums.ParseMode.HTML)
+        except Exception as exc:
+            return await query.answer(f"Play failed: {type(exc).__name__}", show_alert=True)
 
 
 async def module_helper(client: Client, message: Message):
@@ -298,7 +520,7 @@ async def module_helper(client: Client, message: Message):
         return await module_help(client, message)
     key = _find_help_key(help_arg)
     if key:
-        return await message.reply_text(_module_text(key), parse_mode="HTML")
+        return await message.reply_text(_module_text(key), parse_mode=enums.ParseMode.HTML)
     await message.reply_text(f"`{help_arg}` **Not a Valid Module Name.**")
 
 

@@ -3,20 +3,33 @@ services:
     plan: free
     name: Waste
     env: python
-    buildCommand: pip install -U -r requirements.txt
-    startCommand: python3 server.py & python3 -m Waste  
- repo:
-https://github.com/itzshukla/USERBOT     
+    repo: https://github.com/itzshukla/USERBOT
     branch: main
+    buildCommand: pip install -U -r requirements.txt
+    startCommand: python3 server.py & python3 -m Waste
     envVars:
-      - key: SUDO_USERS 
+      - key: SUDO_USERS
         sync: false
-      - key: BOT_TOKEN 
+      - key: BOT_TOKEN
         sync: false
-      - key: OWNER_ID 
-        sync: false
-      - key: STRING_SESSION1
+      - key: OWNER_ID
         sync: false
       - key: MONGO_URL
-        sync: false    
+        sync: false
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: TTS_VOICE
+        value: hi-IN-SwaraNeural
+      - key: TTS_RATE
+        value: -12%
+      - key: TTS_PITCH
+        value: +5Hz
+      - key: COOKIES_FILE
+        sync: false
     autoDeploy: false
