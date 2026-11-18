@@ -39,16 +39,16 @@ PE_VERIFIED = 5226512880362332956
 # Data object, which does not contain the old buttons in this build.
 START_BUTTONS = [
     [InlineKeyboardButton("ＢＡＳＩＣ ＧＵＩＤＥ", callback_data="guide")],
-    [InlineKeyboardButton("ＷＡＳＴＥ ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("ＡＢＯＵＴ", callback_data="about")],
+    [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｗᴀꜱᴛᴇ ↗", url="https://t.me/wasteBotz"), InlineKeyboardButton("ＡＢＯＵＴ", callback_data="about")],
     [InlineKeyboardButton("ＨＥＬＰ", callback_data="help"), InlineKeyboardButton("ＭＵＳＩＣ", callback_data="botforce:cmd:Music")],
-    [InlineKeyboardButton("ＵＰＤＡＴＥＳ ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton("ＳＵＰＰＯＲＴ ↗", url="https://t.me/wasteBotz")],
+    [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｕᴘᴅᴀᴛᴇs ↗", url="https://t.me/wasteuserbotUpdates"), InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｓᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/wasteBotz")],
 ]
 
 HOME_BUTTONS = START_BUTTONS
 
 ABOUT_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴘᴏᴡᴇʀғᴜʟ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀʙᴏᴛ ᴡɪᴛʜ ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ, ᴜᴛɪʟɪᴛɪᴇs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ.</b></blockquote>"
 DONATE_TEXT = ABOUT_TEXT
-GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴜsᴇ /ᴀᴅᴅ ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ /ʜᴇʟᴘ ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
+GUIDE_TEXT = "<blockquote><tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ＢＡＳＩＣ ＧＵＩＤＥ</b>\n\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴜsᴇ <code>/add</code> ᴛᴏ ʟᴏɢɪɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴀғᴛᴇʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ, ᴜsᴇ <code>/help</code> ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ ғᴜʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ.</b>\n<tg-emoji emoji-id=\"5471952986970267163\">✦</tg-emoji> <b>ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ . ᴏʀ / ᴡʜᴇʀᴇ sᴜᴘᴘᴏʀᴛᴇᴅ.</b></blockquote>"
 
 def _pe(eid, fallback="✦"):
     return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
@@ -107,9 +107,9 @@ async def _force_joined(client: Client, user_id: int) -> bool:
 
 def _force_markup():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛡️ ＳＵＰＰＯＲＴ ↗", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("📢 ＵＰＤＡＴＥＳ ↗", url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton("✅ ＶＥＲＩＦＩＥＤ", callback_data="start_force_check")],
+        [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} ＳＵＰＰᴏʀᴛ ↗", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton(f"{_pe(PE_SUPPORT, '✦')} Ｕᴘᴅᴀᴛᴇs ↗", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton(f"{_pe(PE_VERIFIED, '✦')} Ｖᴇʀɪғɪᴇᴅ", callback_data="start_force_check")],
     ])
 
 
@@ -130,13 +130,7 @@ async def start_handler(client: Client, message: Message):
     await _send_start_or_force(client, message)
 
 
-BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>
-
-<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ / ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.</b>
-<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.</b>
-<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.</b>
-<tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ᴜsᴇ .ʜᴇʟᴘ &lt;ᴄᴏᴍᴍᴀɴᴅ&gt; ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</b></blockquote>"""
-
+BOT_FORCE_TEXT = """<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
 
 FORCE_COMMANDS = [
     "Autopic", "admin", "afk", "animation", "anime_cf", "antipm", "autoscroll", "banall", "birthday", "broadcast", "carbon", "clone",
@@ -149,20 +143,24 @@ FORCE_COMMANDS = [
 
 def _bot_force_page_text(page):
     total = 6
-    # Keep the exact six-page layout stable. The last page simply contains the remaining modules.
     chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
     chunk = chunks[max(0, min(int(page), total - 1))]
-    lines = [
-        '<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>',
-        '',
-        f'<tg-emoji emoji-id="5226512880362332956">✦</tg-emoji> <b>ᴘᴀɢᴇ {page+1}/6</b>',
-        ''
-    ]
+    # Only the requested header and command list are shown.
+    lines = ['<blockquote><tg-emoji emoji-id="5471952986970267163">✦</tg-emoji> <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>', '']
     for name in chunk:
-        lines.append(f'<tg-emoji emoji-id="5992095761561554607">✦</tg-emoji> <b>{name}</b>')
+        lines.append(f'<tg-emoji emoji-id="5992095761561554607">✦</tg-emoji> <b>{_ser_name(name)}</b>')
     lines.append('</blockquote>')
     return '\n'.join(lines)
 
+def _ser_name(name):
+    # Mathematical Sans Bold Italic style requested for command labels.
+    mapping = str.maketrans({
+        'a':'𝙖','b':'𝙗','c':'𝙘','d':'𝙙','e':'𝙚','f':'𝙛','g':'𝙜','h':'𝙝','i':'𝙞','j':'𝙟','k':'𝙠','l':'𝙡','m':'𝙢',
+        'n':'𝙣','o':'𝙤','p':'𝙥','q':'𝙦','r':'𝙧','s':'𝙨','t':'𝙩','u':'𝙪','v':'𝙫','w':'𝙬','x':'𝙭','y':'𝙮','z':'𝙯',
+        'A':'𝙰','B':'𝙱','C':'𝙲','D':'𝙳','E':'𝙴','F':'𝙵','G':'𝙶','H':'𝙷','I':'𝙸','J':'𝙹','K':'𝙺','L':'𝙻','M':'𝙼',
+        'N':'𝙽','O':'𝙾','P':'𝙿','Q':'𝚀','R':'𝚁','S':'𝚂','T':'𝚃','U':'𝚄','V':'𝚅','W':'𝚆','X':'𝚇','Y':'𝚈','Z':'𝚉'
+    })
+    return str(name).translate(mapping)
 
 def _bot_force_keyboard(page=0):
     page = max(0, min(int(page), 5))
@@ -170,9 +168,9 @@ def _bot_force_keyboard(page=0):
     rows = []
     items = chunk[page]
     for i in range(0, len(items), 2):
-        row = [InlineKeyboardButton(f"✦ {items[i]}", callback_data=f"botforce:cmd:{items[i]}")]
+        row = [InlineKeyboardButton(f"{_pe(PE_COMMAND, '✦')} {_ser_name(items[i])}", callback_data=f"botforce:cmd:{items[i]}")]
         if i + 1 < len(items):
-            row.append(InlineKeyboardButton(f"✦ {items[i+1]}", callback_data=f"botforce:cmd:{items[i+1]}"))
+            row.append(InlineKeyboardButton(f"{_pe(PE_COMMAND, '✦')} {_ser_name(items[i+1])}", callback_data=f"botforce:cmd:{items[i+1]}"))
         rows.append(row)
     nav = []
     if page > 0:
@@ -406,7 +404,7 @@ async def clone(bot: Client, msg: Message):
     except Exception as e:
         await msg.reply(f"**ERROR:** `{e}`")
 
-@app.on_message(filters.command("add", [".", "/"]) & filters.private)
+@app.on_message(filters.regex(r"^[./]add(?:@\w+)?(?:\s+.*)?$", flags=0) & filters.private)
 async def add_session_command(client: Client, message: Message):
     uid = message.from_user.id
     if _session_doc(uid):
@@ -418,6 +416,27 @@ async def add_session_command(client: Client, message: Message):
             await old["client"].disconnect()
         except Exception:
             pass
+    args = (message.text or "").split(maxsplit=1)
+    if len(args) == 2 and args[1].strip():
+        user_sessions[uid] = {"step": "awaiting_phone"}
+        # Reuse the normal wizard by handling the supplied number below.
+        phone_msg = message
+        phone_text = args[1].strip()
+        if phone_text.startswith("+") and phone_text[1:].isdigit() and 8 <= len(phone_text) <= 16:
+            temp = Client(name=f"gen_{uid}", api_id=API_ID, api_hash=API_HASH, in_memory=True, device_model="Waste", app_version="1.0")
+            user_sessions[uid].update({"phone": phone_text, "client": temp})
+            try:
+                await temp.connect()
+                sent = await temp.send_code(phone_text)
+                user_sessions[uid]["phone_code_hash"] = sent.phone_code_hash
+                user_sessions[uid]["step"] = "awaiting_otp"
+                return await message.reply("📨 OTP sᴇɴᴛ! sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `1 2 3 4 5`")
+            except Exception as e:
+                try: await temp.disconnect()
+                except Exception: pass
+                user_sessions.pop(uid, None)
+                return await message.reply(f"❌ OTP error: `{e}`\nPlease use /add again.")
+        return await message.reply("❌ ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ. sᴇɴᴅ ɪᴛ ʟɪᴋᴇ: `+918200000009`")
     await message.reply("📲 ᴘʟᴇᴀsᴇ sᴇɴᴅ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪɴ ɪɴᴛᴇʀɴᴀᴛɪᴏɴᴀʟ ғᴏʀᴍᴀᴛ (e.g. +918200000009):")
     user_sessions[uid] = {"step": "awaiting_phone"}
 

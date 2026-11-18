@@ -47,12 +47,7 @@ HELP_MENU = f"""<blockquote>{PE(PE_USER)} <b>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯ
 
 {PE(PE_SUPPORT)} <b>@wasteBotz</b>  ×  <b>@wasteuserbotUpdates</b></blockquote>"""
 
-FORCE_TEXT = f"""<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>
-
-{PE(PE_COMMAND)} <b>ᴄʜᴏᴏsᴇ ᴀ ᴄᴏᴍᴍᴀɴᴅ / ᴍᴏᴅᴜʟᴇ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ɪᴛs ᴅᴇᴛᴀɪʟs.</b>
-{PE(PE_COMMAND)} <b>ᴛᴀᴘ ᴀɴʏ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ɪᴛs ᴜsᴀɢᴇ.</b>
-{PE(PE_COMMAND)} <b>ᴍᴜsɪᴄ, ᴠᴄғɪɢʜᴛ ᴀɴᴅ ʀᴇᴄᴏʀᴅɪɴɢs ʜᴀᴠᴇ ᴛʜᴇɪʀ ᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɢᴇs.</b>
-{PE(PE_COMMAND)} <b>ᴜsᴇ .ʜᴇʟᴘ &lt;ᴄᴏᴍᴍᴀɴᴅ&gt; ғʀᴏᴍ ᴀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ғᴏʀ ᴅɪʀᴇᴄᴛ ᴅᴇᴛᴀɪʟs.</b></blockquote>"""
+FORCE_TEXT = f"""<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b></blockquote>"""
 
 FORCE_CHANNELS = [
     ("wasteBotz", "🛡️ SUPPORT CHANNEL"),
@@ -69,11 +64,20 @@ FORCE_COMMANDS = [
     "Music", "AutoTextPromo"
 ]
 
+def _ser_name(name):
+    mapping = str.maketrans({
+        'a':'𝙖','b':'𝙗','c':'𝙘','d':'𝙙','e':'𝙚','f':'𝙛','g':'𝙜','h':'𝙝','i':'𝙞','j':'𝙟','k':'𝙠','l':'𝙡','m':'𝙢',
+        'n':'𝙣','o':'𝙤','p':'𝙥','q':'𝙦','r':'𝙧','s':'𝙨','t':'𝙩','u':'𝙪','v':'𝙫','w':'𝙬','x':'𝙭','y':'𝙮','z':'𝙯',
+        'A':'𝙰','B':'𝙱','C':'𝙲','D':'𝙳','E':'𝙴','F':'𝙵','G':'𝙶','H':'𝙷','I':'𝙸','J':'𝙹','K':'𝙺','L':'𝙻','M':'𝙼',
+        'N':'𝙽','O':'𝙾','P':'𝙿','Q':'𝚀','R':'𝚁','S':'𝚂','T':'𝚃','U':'𝚄','V':'𝚅','W':'𝚆','X':'𝚇','Y':'𝚈','Z':'𝚉'
+    })
+    return str(name).translate(mapping)
+
 def _force_page_text(page=0):
     page = max(0, min(int(page), 5))
     chunks = [FORCE_COMMANDS[i:i+11] for i in range(0, 55, 11)] + [FORCE_COMMANDS[55:]]
-    lines = [f"<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>", "", f"{PE(5226512880362332956)} <b>ᴘᴀɢᴇ {page+1}/6</b>", ""]
-    lines.extend(f"{PE(PE_COMMAND)} <b>{name}</b>" for name in chunks[page])
+    lines = [f"<blockquote>{PE(PE_COMMAND)} <b>ＷＡＳＴＥ Ｘ ＵＢＯＴ — ꜰᴏʀᴄᴇ ᴄᴏᴍᴍᴀɴᴅs</b>", ""]
+    lines.extend(f"{PE(PE_COMMAND)} <b>{_ser_name(name)}</b>" for name in chunks[page])
     lines.append("</blockquote>")
     return "\n".join(lines)
 
@@ -83,9 +87,9 @@ def _force_keyboard(page=0):
     rows = []
     chunk = chunks[page]
     for i in range(0, len(chunk), 2):
-        row = [InlineKeyboardButton(f"✦ {chunk[i]}", callback_data=f"force_mod:{chunk[i]}")]
+        row = [InlineKeyboardButton(f"{PE(PE_COMMAND)} {_ser_name(chunk[i])}", callback_data=f"force_mod:{chunk[i]}")]
         if i + 1 < len(chunk):
-            row.append(InlineKeyboardButton(f"✦ {chunk[i+1]}", callback_data=f"force_mod:{chunk[i+1]}"))
+            row.append(InlineKeyboardButton(f"{PE(PE_COMMAND)} {_ser_name(chunk[i+1])}", callback_data=f"force_mod:{chunk[i+1]}"))
         rows.append(row)
     nav=[]
     if page > 0:
@@ -100,18 +104,18 @@ def _force_keyboard(page=0):
 
 def _recordings_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("➕ ADDRC", callback_data="force_record:addrc"), InlineKeyboardButton("🗑️ REMOVERC", callback_data="force_record:removerc")],
-        [InlineKeyboardButton("📂 MYRC", callback_data="force_record:myrc"), InlineKeyboardButton("ℹ️ RCINFO", callback_data="force_record:rcinfo")],
-        [InlineKeyboardButton("🔊 BASS 100–500", callback_data="force_record:bass")],
+        [InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙖𝙙𝙙𝙧𝙘", callback_data="force_record:addrc"), InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙧𝙚𝙢𝙤𝙫𝙚𝙧𝙘", callback_data="force_record:removerc")],
+        [InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙢𝙮𝙧𝙘", callback_data="force_record:myrc"), InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙧𝙘𝙞𝙣𝙛𝙤", callback_data="force_record:rcinfo")],
+        [InlineKeyboardButton(f"{PE(PE_COMMAND)} 𝙗𝙖𝙨𝙨 100–500", callback_data="force_record:bass")],
         [InlineKeyboardButton("🔙 FORCE COMMANDS", callback_data="force_menu")],
     ])
 
 
 def _force_join_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛡️ SUPPORT", url="https://t.me/wasteBotz")],
-        [InlineKeyboardButton("📢 UPDATES", url="https://t.me/wasteuserbotUpdates")],
-        [InlineKeyboardButton("✅ VERIFIED", callback_data="force_check")],
+        [InlineKeyboardButton(f"{PE(PE_SUPPORT)} Ｓᴜᴘᴘᴏʀᴛ", url="https://t.me/wasteBotz")],
+        [InlineKeyboardButton(f"{PE(PE_SUPPORT)} Ｕᴘᴅᴀᴛᴇs", url="https://t.me/wasteuserbotUpdates")],
+        [InlineKeyboardButton(f"{PE(PE_VERIFIED)} Ｖᴇʀɪғɪᴇᴅ", callback_data="force_check")],
     ])
 
 
