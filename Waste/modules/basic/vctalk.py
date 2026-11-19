@@ -366,6 +366,12 @@ def _register_stream_callback(user_client, call):
 async def _start_recording(client, chat_id):
     if not _VC_API_OK:
         raise RuntimeError("Installed PyTgCalls build has no incoming stream-frame callback API")
+    # VcTalk must listen on the connected ID's active VC. If the connected
+    # ID has not joined this VC yet, join it first using the existing VC
+    # join path instead of creating a separate bot-side call.
+    state = _states.get(_key(client))
+    if not state or int(chat_id) not in state.joined:
+        await _join(client, int(chat_id))
     _, call = await _bridge(client)
     _register_stream_callback(client, call)
     key = _key2(client, chat_id)
@@ -495,18 +501,19 @@ async def _watch_global(client):
     await asyncio.sleep(3)
     while _talk_global.get(owner, False):
         try:
-            state = _states.get(_key(client), {})
-            chats = list((state.get("joined") or {}).keys())
+            state = _states.get(_key(client))
+            chats = list(state.joined) if state else []
             for cid in chats:
                 await _start_for_joined(client, int(cid))
-        except Exception:
-            pass
+        except Exception as exc:
+            log.debug("VC Talk watcher failed: %s", type(exc).__name__)
         await asyncio.sleep(5)
 
 
-def start_background_for_client(client):
+async def start_background_for_client(client):
     owner = _owner_key(client)
-    if not _talk_watchers.get(owner):
+    task = _talk_watchers.get(owner)
+    if not task or task.done():
         _talk_watchers[owner] = asyncio.create_task(_watch_global(client))
 
 
@@ -524,7 +531,7 @@ async def vctalk_command(client, message):
     if action == "on":
         if target is None:
             _talk_global[_owner_key(client)] = True
-            start_background_for_client(client)
+            await start_background_for_client(client)
             joined = list((_states.get(_key(client), {}).get("joined") or {}).keys())
             started = 0
             for cid in joined:

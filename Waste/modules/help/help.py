@@ -43,7 +43,8 @@ HELP_MENU = f"""<blockquote>{PE(PE_USER)} <b>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯ
 {PE(PE_COMMAND)} <b>vulgar</b>  {PE(PE_COMMAND)} <b>waifu</b>
 {PE(PE_COMMAND)} <b>weather</b>  {PE(PE_COMMAND)} <b>VcFight</b>
 {PE(PE_COMMAND)} <b>promotion</b>  {PE(PE_COMMAND)} <b>aichat</b>
-{PE(PE_COMMAND)} <b>Music</b>  {PE(PE_COMMAND)} <b>AutoTextPromo</b>
+{PE(PE_COMMAND)} <b>Music</b>  {PE(PE_COMMAND)} <b>VcTalk</b>
+{PE(PE_COMMAND)} <b>AutoTextPromo</b>
 
 {PE(PE_SUPPORT)} <b>@wasteBotz</b>  ×  <b>@wasteuserbotUpdates</b></blockquote>"""
 
@@ -61,7 +62,7 @@ FORCE_COMMANDS = [
     "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart",
     "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text",
     "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "VcFight", "promotion", "aichat",
-    "Music", "AutoTextPromo"
+    "Music", "VcTalk", "AutoTextPromo"
 ]
 
 def _ser_name(name):
@@ -304,7 +305,7 @@ def _module_text(key):
     return "\n".join(lines)
 
 
-@Client.on_message(filters.command("force", [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
+@Client.on_message(filters.command("force", [".", "/"]) & filters.me)
 async def force_command(client, message):
     is_private = bool(message.chat and getattr(message.chat.type, "value", message.chat.type) == "private")
     if is_private and not await _joined(client, message.from_user.id if message.from_user else (await client.get_me()).id):
@@ -315,7 +316,7 @@ async def force_command(client, message):
         return await message.reply_text(_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
 
 
-@Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & (filters.me | filters.user(SUDO_USER)))
+@Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & filters.me)
 async def module_help(client: Client, message: Message):
     help_arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     is_private = bool(message.chat and getattr(message.chat.type, "value", message.chat.type) == "private")

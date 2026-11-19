@@ -272,59 +272,6 @@ async def callback_handler(client: Client, query: CallbackQuery):
         except Exception:
             await query.message.edit_caption(GUIDE_TEXT, reply_markup=InlineKeyboardMarkup(START_BUTTONS), parse_mode=enums.ParseMode.HTML)
 
-@app.on_message(filters.command(["play", "vplay"], [".", "/"]) & filters.group)
-async def group_play_command(client: Client, message: Message):
-    parts = message.text.split(None, 1) if message.text else []
-    query = parts[1].strip() if len(parts) > 1 else ""
-    if not query:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴀɢᴇ: /play song name</b>", parse_mode=enums.ParseMode.HTML)
-    if not active_sessions:
-        return await message.reply_text(f"{_pe(PE_USER)} <b>ɴᴏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɪᴅ ɪs ᴏɴʟɪɴᴇ ʀɪɢʜᴛ ɴᴏᴡ.</b>", parse_mode=enums.ParseMode.HTML)
-
-    hosted = None
-    # The bot is only the control interface. Prefer the connected account
-    # belonging to the person who issued the command, then fall back to an
-    # account that is a member of the group.
-    requester_id = message.from_user.id if message.from_user else None
-    if requester_id is not None:
-        for candidate in list(active_sessions):
-            if getattr(candidate, "_waste_owner_uid", None) == requester_id:
-                hosted = candidate
-                break
-    if hosted is None:
-        for candidate in list(active_sessions):
-            try:
-                member = await candidate.get_chat_member(message.chat.id, "me")
-                status = getattr(member.status, "value", member.status)
-                if status not in {"left", "kicked", "banned"}:
-                    hosted = candidate
-                    break
-            except Exception:
-                continue
-    hosted = hosted or active_sessions[0]
-
-    status = await message.reply_text(f"{_pe(PE_USER)} <b>sᴇᴀʀᴄʜɪɴɢ ʏᴏᴜᴛᴜʙᴇ...</b>", parse_mode=enums.ParseMode.HTML)
-    path = None
-    try:
-        from Waste.modules.basic.playvc import play_song_in_chat
-        path, info, queued = await play_song_in_chat(hosted, message.chat.id, query)
-        title = info.get("title") or query
-        duration = info.get("duration_string") or "Unknown"
-        if queued:
-            await status.edit_text(f"{_pe(PE_USER)} <b>ǫᴜᴇᴜᴇᴅ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>", parse_mode=enums.ParseMode.HTML)
-        else:
-            await status.edit_text(f"{_pe(PE_USER)} <b>ɴᴏᴡ ᴘʟᴀʏɪɴɢ</b>\n\n{_pe(PE_USER)} <b>{escape(str(title))}</b>\n{_pe(PE_USER)} <b>{escape(str(duration))}</b>\n{_pe(PE_USER)} <b>ᴘʟᴀʏɪɴɢ ɪɴ ᴛʜɪs ɢʀᴏᴜᴘs ᴠᴏɪᴄᴇ ᴄʜᴀᴛ</b>", parse_mode=enums.ParseMode.HTML)
-    except Exception as exc:
-        await status.edit_text(f"{_pe(PE_USER)} <b>ᴍᴜsɪᴄ ғᴀɪʟᴇᴅ: <code>{escape(type(exc).__name__)}</code></b>\n\n<code>{escape(str(exc)[:500])}</code>", parse_mode=enums.ParseMode.HTML)
-    finally:
-        if path:
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except OSError:
-                pass
-
-
 @app.on_message(filters.command("subscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def subscription_cmd(client: Client, message: Message):
     if len(message.command) < 2:
