@@ -10,6 +10,7 @@ import uuid
 from collections import defaultdict
 
 from pyrogram import Client, filters, enums
+from pyrogram.enums import ChatMemberStatus
 from pytgcalls.types import GroupCallConfig
 
 from Waste.modules.basic.vcfight import _bridge, _join
@@ -29,33 +30,6 @@ _music = defaultdict(lambda: {
 
 def _state(client, chat_id):
     return _music[(id(client), int(chat_id))]
-
-
-async def _is_group_admin(client, message):
-    """Return True only when the command sender is a group admin/owner."""
-    if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
-        return False
-    if not message.from_user:
-        return False
-    try:
-        member = await client.get_chat_member(message.chat.id, message.from_user.id)
-        status = getattr(member, "status", None)
-        value = getattr(status, "value", status)
-        return value in {"administrator", "creator"}
-    except Exception as exc:
-        log.debug("Admin check failed: %s", type(exc).__name__)
-        return False
-
-
-async def _require_group_admin(message, client):
-    if await _is_group_admin(client, message):
-        return True
-    await message.reply(
-        "<blockquote>❌ <b>ᴀᴅᴍɪɴ ᴏɴʟʏ</b>\n\n"
-        "ᴏɴʟʏ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs ᴍᴜsɪᴄ ᴄᴏᴍᴍᴀɴᴅ.</blockquote>",
-        parse_mode=enums.ParseMode.HTML,
-    )
-    return False
 
 
 def _safe_title(info, fallback):
@@ -259,8 +233,6 @@ async def play_handler(client, message):
             "<blockquote>❌ ᴜsᴇ <code>.play sᴏɴɢ ɴᴀᴍᴇ</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.</blockquote>",
             parse_mode=enums.ParseMode.HTML,
         )
-    # PLAY IS AVAILABLE TO EVERY GROUP MEMBER. Only skip/stop are admin-only.
-    # The connected ID is the account that performs the actual VC playback.
 
     parts = message.text.split(None, 1) if message.text else []
     query = parts[1].strip() if len(parts) > 1 else ""
@@ -301,6 +273,10 @@ async def play_handler(client, message):
 
 @Client.on_message(filters.command("autoplay", [".", "/"]))
 async def autoplay_command(client, message):
+    if not getattr(client, "_waste_owner_uid", None):
+        return
+    if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
+        return await message.reply("❌ ᴜsᴇ <code>.autoplay on</code> / <code>.autoplay off</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.", parse_mode=enums.ParseMode.HTML)
     args = message.command[1:] if len(message.command) > 1 else []
     target = message.chat.id if message.chat else None
     if len(args) > 1 and args[1].lstrip("-").isdigit():
@@ -320,8 +296,10 @@ async def autoplay_command(client, message):
 
 @Client.on_message(filters.command("queue", [".", "/"]))
 async def queue_command(client, message):
-    if not message.chat:
+    if not getattr(client, "_waste_owner_uid", None):
         return
+    if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
+        return await message.reply("❌ ᴜsᴇ <code>.queue</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.", parse_mode=enums.ParseMode.HTML)
     state = _state(client, message.chat.id)
     lines = []
     if state.get("current"):
@@ -333,12 +311,27 @@ async def queue_command(client, message):
     await message.reply("<blockquote>🎵 <b>ǫᴜᴇᴜᴇ</b>\n\n" + "\n".join(lines) + "</blockquote>", parse_mode=enums.ParseMode.HTML)
 
 
+async def _is_group_admin(client, message):
+    """Return True only when the command sender is a group admin/owner."""
+    if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
+        return False
+    user = getattr(message, "from_user", None)
+    if not user:
+        return False
+    try:
+        member = await client.get_chat_member(message.chat.id, user.id)
+        status = getattr(member.status, "value", member.status)
+        return status in {ChatMemberStatus.ADMINISTRATOR.value, ChatMemberStatus.OWNER.value, "administrator", "owner", "creator"}
+    except Exception:
+        return False
+
+
 @Client.on_message(filters.command("skip", [".", "/"]))
 async def skip_command(client, message):
-    if not message.chat:
+    if not getattr(client, "_waste_owner_uid", None):
         return
-    if not await _require_group_admin(message, client):
-        return
+    if not await _is_group_admin(client, message):
+        return await message.reply("❌ <b>ᴀᴅᴍɪɴ ᴏɴʟʏ</b>\n\nᴏɴʟʏ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ <code>.skip</code> / <code>/skip</code>.", parse_mode=enums.ParseMode.HTML)
     state = _state(client, message.chat.id)
     if not state.get("current"):
         return await message.reply("❌ ɴᴏ ᴛʀᴀᴄᴋ ɪs ᴘʟᴀʏɪɴɢ")
@@ -372,10 +365,10 @@ async def skip_command(client, message):
 
 @Client.on_message(filters.command("stop", [".", "/"]))
 async def stop_command(client, message):
-    if not message.chat:
+    if not getattr(client, "_waste_owner_uid", None):
         return
-    if not await _require_group_admin(message, client):
-        return
+    if not await _is_group_admin(client, message):
+        return await message.reply("❌ <b>ᴀᴅᴍɪɴ ᴏɴʟʏ</b>\n\nᴏɴʟʏ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ <code>.stop</code> / <code>/stop</code>.", parse_mode=enums.ParseMode.HTML)
     state = _state(client, message.chat.id)
     task = state.get("task")
     if task and not task.done():
@@ -394,11 +387,11 @@ async def stop_command(client, message):
 add_command_help(
     "Music",
     [
-        ["play", "All group members can use `.play song name` or `/play song name`. The connected ID joins this group's VC and plays exactly the requested result; if another track is already playing, the requested track is queued."],
-        ["autoplay on|off", "All group members can use `.autoplay on` / `/autoplay on` or `.autoplay off` / `/autoplay off` to control related-song autoplay for the current VC."],
-        ["queue", "All group members can use `.queue` or `/queue` to view the current song and queued songs in this group."],
+        ["play", "Any group member can use `.play song name` or `/play song name`. The connected ID joins the current group VC and plays the requested song."],
+        ["autoplay on|off", "Any group member can turn related-song autoplay on or off for the current VC."],
+        ["queue", "Any group member can view the current song and queued songs."],
         ["skip", "Group admins only: skip the current song and play the next queued/related song."],
         ["stop", "Group admins only: stop music and clear the queue."],
-        ["vplay", "Connected ID only: alias for `.play`."],
+        ["vplay", "Any group member can use `.vplay song name`; it follows the same playback flow as `.play`."],
     ],
 )

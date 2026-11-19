@@ -317,7 +317,7 @@ async def force_command(client, message):
         return await message.reply_text(_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
 
 
-@Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["help", "helpme"], [".", "/"]))
 async def module_help(client: Client, message: Message):
     # Help belongs to the connected userbot account, not the host bot token.
     if not getattr(client, "_waste_owner_uid", None):

@@ -26,6 +26,48 @@ recordings_col = db["UserRecordings"]
 def _session_doc(uid):
     return sessions_col.find_one({"_id": uid})
 
+
+def _normalize_username(value: str):
+    value = str(value or "").strip()
+    if value.startswith("@"):
+        value = value[1:]
+    return value or None
+
+
+async def _resolve_subscription_target(client: Client, args):
+    """Resolve subscription target from either Telegram user ID or username.
+
+    Supported:
+      /subscription 123456789
+      /subscription @username
+      /subscription username
+      /subscription 123456789 username
+    The database is always keyed by numeric Telegram user ID.
+    """
+    if not args:
+        return None, None
+
+    raw = str(args[0]).strip()
+    username = None
+
+    # Numeric Telegram ID: use it directly; optional username is only metadata.
+    if raw.lstrip("-").isdigit():
+        uid = int(raw)
+        if len(args) > 1:
+            username = _normalize_username(args[1])
+        return uid, username
+
+    # Username target: resolve it through Telegram and store the numeric ID.
+    username = _normalize_username(raw)
+    if not username:
+        return None, None
+    try:
+        user = await client.get_users(username)
+        uid = int(user.id)
+        return uid, username
+    except Exception:
+        return None, username
+
 OWNER_USERNAME = "day1Nomore"
 SUPPORT_USERNAME = "wasteBotz"
 FORCE_SUPPORT = "wasteBotz"
@@ -275,8 +317,8 @@ async def callback_handler(client: Client, query: CallbackQuery):
 @app.on_message(filters.command("subscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def subscription_cmd(client: Client, message: Message):
     if len(message.command) < 2:
-        return await message.reply_text("Usage: /subscription <user_id> [username]")
-    uid, username = _parse_target(message.command[1:])
+        return await message.reply_text("Usage: /subscription <user_id|@username> [username]")
+    uid, username = await _resolve_subscription_target(client, message.command[1:])
     if uid is None:
         return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b> ᴇxᴀᴍᴘʟᴇ: /subscription 123456789 username")
     expires = datetime.now(timezone.utc) + timedelta(days=30)
@@ -304,8 +346,8 @@ async def subscription_cmd(client: Client, message: Message):
 @app.on_message(filters.command("disubscription", [".", "/"]) & filters.private & filters.user(OWNER_ID))
 async def disubscription_cmd(client: Client, message: Message):
     if len(message.command) < 2:
-        return await message.reply_text("Usage: /disubscription <user_id> [username]")
-    uid, username = _parse_target(message.command[1:])
+        return await message.reply_text("Usage: /disubscription <user_id|@username> [username]")
+    uid, username = await _resolve_subscription_target(client, message.command[1:])
     if uid is None:
         return await message.reply_text(f"{_pe(PE_USER)} <b>ᴜsᴇʀ ɪᴅ ʀᴇǫᴜɪʀᴇᴅ.</b>")
     result = subscriptions_col.delete_one({"_id": uid})

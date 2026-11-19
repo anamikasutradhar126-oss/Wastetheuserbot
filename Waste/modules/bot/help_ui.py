@@ -24,7 +24,7 @@ CATEGORIES = [
 ]
 
 COMMANDS = {
-    "music": f"<blockquote>{pe()} <b>𝙢𝙪𝙨𝙞𝙘</b>\n\n{pe()} <b>/play song name</b>\n{pe()} <b>.play song name</b>\n{pe()} <b>/queue</b>\n{pe()} <b>.queue</b>\n{pe()} <b>/autoplay on|off</b>\n{pe()} <b>.autoplay on|off</b>\n{pe()} <b>/skip</b> — 𝙖𝙙𝙢𝙞𝙣 𝙤𝙣𝙡𝙮\n{pe()} <b>.skip</b> — 𝙖𝙙𝙢𝙞𝙣 𝙤𝙣𝙡𝙮\n{pe()} <b>/stop</b> — 𝙖𝙙𝙢𝙞𝙣 𝙤𝙣𝙡𝙮\n{pe()} <b>.stop</b> — 𝙖𝙙𝙢𝙞𝙣 𝙤𝙣𝙡𝙮\n\n{pe()} <b>𝙥𝙡𝙖𝙮, 𝙦𝙪𝙚𝙪𝙚 𝙖𝙣𝙙 𝙖𝙪𝙩𝙤𝙥𝙡𝙖𝙮 𝙖𝙧𝙚 𝙖𝙫𝙖𝙞𝙡𝙖𝙗𝙡𝙚 𝙩𝙤 𝙖𝙡𝙡 𝙜𝙧𝙤𝙪𝙥 𝙢𝙚𝙢𝙗𝙚𝙧𝙨. 𝙨𝙠𝙞𝙥 𝙖𝙣𝙙 𝙨𝙩𝙤𝙥 𝙖𝙧𝙚 𝙜𝙧𝙤𝙪𝙥-𝙖𝙙𝙢𝙞𝙣 𝙤𝙣𝙡𝙮.</b></blockquote>",
+    "music": f"<blockquote>{pe()} <b>𝙢𝙪𝙨𝙞𝙘</b>\n\n{pe()} <b>/play song name</b>\n{pe()} <b>.play song name</b>\n\n{pe()} <b>𝙥𝙡𝙖𝙮 𝙩𝙝𝙚 𝙧𝙚𝙦𝙪𝙚𝙨𝙩𝙚𝙙 𝙨𝙤𝙣𝙜 𝙞𝙣 𝙩𝙝𝙚 𝙘𝙤𝙣𝙣𝙚𝙘𝙩𝙚𝙙 𝙖𝙘𝙘𝙤𝙪𝙣𝙩'𝙨 𝙖𝙘𝙩𝙞𝙫𝙚 𝙜𝙧𝙤𝙪𝙥 𝙫𝙘.</b></blockquote>",
     "vcfight": f"<blockquote>{pe()} <b>𝙫𝙘𝙛𝙞𝙜𝙝𝙩</b>\n\n{pe()} <b>/join &lt;group_id&gt;</b>\n{pe()} <b>.join &lt;group_id&gt;</b>\n{pe()} <b>/allvc join|leave</b>\n{pe()} <b>.allvc join|leave</b>\n{pe()} <b>/fight</b>\n{pe()} <b>.fight</b>\n{pe()} <b>/fightstop</b>\n{pe()} <b>.fightstop</b>\n{pe()} <b>/vcleave</b>\n{pe()} <b>.vcleave</b>\n{pe()} <b>/vcstatus</b>\n{pe()} <b>.vcstatus</b>\n{pe()} <b>/recordings</b>\n{pe()} <b>.recordings</b>\n{pe()} <b>/addrc</b>\n{pe()} <b>.addrc</b>\n{pe()} <b>/removerc</b>\n{pe()} <b>.removerc</b>\n{pe()} <b>/myrc</b>\n{pe()} <b>.myrc</b>\n{pe()} <b>/rcinfo</b>\n{pe()} <b>.rcinfo</b></blockquote>",
     "welcome": f"<blockquote>{pe()} <b>𝙬𝙚𝙡𝙘𝙤𝙢𝙚</b>\n\n{pe()} <b>/welcome on</b>\n{pe()} <b>.welcome on</b>\n{pe()} <b>/welcome off</b>\n{pe()} <b>.welcome off</b>\n\n{pe()} <b>𝙘𝙤𝙣𝙣𝙚𝙘𝙩𝙚𝙙 𝙖𝙘𝙘𝙤𝙪𝙣𝙩 𝙬𝙚𝙡𝙘𝙤𝙢𝙚𝙨 𝙣𝙚𝙬 𝙢𝙚𝙢𝙗𝙚𝙧𝙨 𝙬𝙝𝙚𝙣 𝙚𝙣𝙖𝙗𝙡𝙚𝙙.</b></blockquote>",
     "aichat": f"<blockquote>{pe()} <b>𝙖𝙞 𝙘𝙝𝙖𝙩</b>\n\n{pe()} <b>𝙪𝙨𝙚 𝙩𝙝𝙚 𝙚𝙭𝙞𝙨𝙩𝙞𝙣𝙜 𝙖𝙞 𝙘𝙝𝙖𝙩 𝙘𝙤𝙢𝙢𝙖𝙣𝙙𝙨 𝙛𝙧𝙤𝙢 𝙩𝙝𝙚 𝙘𝙤𝙣𝙣𝙚𝙘𝙩𝙚𝙙 𝙪𝙨𝙚𝙧𝙗𝙤𝙩.</b></blockquote>",
