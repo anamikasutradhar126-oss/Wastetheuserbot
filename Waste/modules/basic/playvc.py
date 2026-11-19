@@ -31,6 +31,33 @@ def _state(client, chat_id):
     return _music[(id(client), int(chat_id))]
 
 
+async def _is_group_admin(client, message):
+    """Return True only when the command sender is a group admin/owner."""
+    if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
+        return False
+    if not message.from_user:
+        return False
+    try:
+        member = await client.get_chat_member(message.chat.id, message.from_user.id)
+        status = getattr(member, "status", None)
+        value = getattr(status, "value", status)
+        return value in {"administrator", "creator"}
+    except Exception as exc:
+        log.debug("Admin check failed: %s", type(exc).__name__)
+        return False
+
+
+async def _require_group_admin(message, client):
+    if await _is_group_admin(client, message):
+        return True
+    await message.reply(
+        "<blockquote>❌ <b>ᴀᴅᴍɪɴ ᴏɴʟʏ</b>\n\n"
+        "ᴏɴʟʏ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs ᴍᴜsɪᴄ ᴄᴏᴍᴍᴀɴᴅ.</blockquote>",
+        parse_mode=enums.ParseMode.HTML,
+    )
+    return False
+
+
 def _safe_title(info, fallback):
     title = str(info.get("title") or fallback)
     return title.replace("<", "&lt;").replace(">", "&gt;")[:180]
@@ -232,6 +259,8 @@ async def play_handler(client, message):
             "<blockquote>❌ ᴜsᴇ <code>.play sᴏɴɢ ɴᴀᴍᴇ</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.</blockquote>",
             parse_mode=enums.ParseMode.HTML,
         )
+    if not await _require_group_admin(message, client):
+        return
 
     parts = message.text.split(None, 1) if message.text else []
     query = parts[1].strip() if len(parts) > 1 else ""
@@ -270,7 +299,7 @@ async def play_handler(client, message):
         )
 
 
-@Client.on_message(filters.command("autoplay", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("autoplay", [".", "/"]))
 async def autoplay_command(client, message):
     args = message.command[1:] if len(message.command) > 1 else []
     target = message.chat.id if message.chat else None
@@ -289,7 +318,7 @@ async def autoplay_command(client, message):
     return await message.reply(f"🔁 ᴀᴜᴛᴏᴘʟᴀʏ: {'🟢 ON' if state['autoplay'] else '🔴 OFF'} — `{target}`")
 
 
-@Client.on_message(filters.command("queue", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("queue", [".", "/"]))
 async def queue_command(client, message):
     if not message.chat:
         return
@@ -304,9 +333,11 @@ async def queue_command(client, message):
     await message.reply("<blockquote>🎵 <b>ǫᴜᴇᴜᴇ</b>\n\n" + "\n".join(lines) + "</blockquote>", parse_mode=enums.ParseMode.HTML)
 
 
-@Client.on_message(filters.command("skip", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("skip", [".", "/"]))
 async def skip_command(client, message):
     if not message.chat:
+        return
+    if not await _require_group_admin(message, client):
         return
     state = _state(client, message.chat.id)
     if not state.get("current"):
@@ -339,9 +370,11 @@ async def skip_command(client, message):
     await message.reply("⏭️ ᴛʀᴀᴄᴋ sᴋɪᴘᴘᴇᴅ")
 
 
-@Client.on_message(filters.command("stop", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("stop", [".", "/"]))
 async def stop_command(client, message):
     if not message.chat:
+        return
+    if not await _require_group_admin(message, client):
         return
     state = _state(client, message.chat.id)
     task = state.get("task")
@@ -361,11 +394,11 @@ async def stop_command(client, message):
 add_command_help(
     "Music",
     [
-        ["play", "Connected ID only: `.play song name` or `/play song name` joins the current group's VC, downloads the song and plays it."],
-        ["autoplay on|off", "Turn related-song autoplay on or off for the current VC."],
-        ["queue", "Show the current song and queued songs."],
-        ["skip", "Skip the current song and play the next queued/related song."],
-        ["stop", "Stop music and clear the queue."],
+        ["play", "Everyone in the group can use `.play song name` or `/play song name`. The connected ID joins this group's VC and plays the requested song; if another track is already playing, the requested track is queued."],
+        ["autoplay on|off", "Everyone in the group can use `.autoplay on` / `/autoplay on` or `.autoplay off` / `/autoplay off` to control related-song autoplay for the current VC."],
+        ["queue", "Everyone in the group can use `.queue` or `/queue` to view the current song and queued songs in this group."],
+        ["skip", "Group admins only: skip the current song and play the next queued/related song."],
+        ["stop", "Group admins only: stop music and clear the queue."],
         ["vplay", "Connected ID only: alias for `.play`."],
     ],
 )
