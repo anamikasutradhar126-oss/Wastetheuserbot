@@ -317,11 +317,12 @@ async def force_command(client, message):
         return await message.reply_text(_force_page_text(0), reply_markup=_force_keyboard(0), parse_mode=enums.ParseMode.HTML)
 
 
-@Client.on_message(filters.command(["help", "helpme"], [".", "/"]))
+@Client.on_message((filters.group | filters.private) & (filters.incoming | filters.me) & filters.command(["help", "helpme"], [".", "/"]))
 async def module_help(client: Client, message: Message):
-    # Help belongs to the connected userbot account, not the host bot token.
-    if not getattr(client, "_waste_owner_uid", None):
-        return
+    # .help is intentionally available in both private chats and groups.
+    # Do not require filters.me or a hosted-owner marker here: the connected
+    # userbot must be able to answer .help sent by any member in a group,
+    # while still using the connected account to send the reply.
     help_arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     is_private = bool(message.chat and getattr(message.chat.type, "value", message.chat.type) == "private")
 

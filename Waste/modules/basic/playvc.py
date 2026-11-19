@@ -236,11 +236,12 @@ async def play_song_in_chat(client, chat_id: int, query: str, enqueue=False):
     return path, info, False
 
 
-@Client.on_message(filters.command(["play", "song", "vplay"], [".", "/"]))
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["play", "song", "vplay"], [".", "/"]))
 async def play_handler(client, message):
-    # The connected /add account performs playback, but any member of the
-    # group can request it by sending .play /play.
-    if not await _owner_uid(client):
+    # The connected /add account performs playback. Incoming group messages
+    # from ANY member are accepted; the sender does not need to be the
+    # connected account.
+    if not message.from_user:
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply(
@@ -285,9 +286,9 @@ async def play_handler(client, message):
         )
 
 
-@Client.on_message(filters.command("autoplay", [".", "/"]))
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command("autoplay", [".", "/"]))
 async def autoplay_command(client, message):
-    if not await _owner_uid(client):
+    if not message.from_user:
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply("❌ ᴜsᴇ <code>.autoplay on</code> / <code>.autoplay off</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.", parse_mode=enums.ParseMode.HTML)
@@ -308,9 +309,9 @@ async def autoplay_command(client, message):
     return await message.reply(f"🔁 ᴀᴜᴛᴏᴘʟᴀʏ: {'🟢 ON' if state['autoplay'] else '🔴 OFF'} — `{target}`")
 
 
-@Client.on_message(filters.command("queue", [".", "/"]))
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command("queue", [".", "/"]))
 async def queue_command(client, message):
-    if not await _owner_uid(client):
+    if not message.from_user:
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply("❌ ᴜsᴇ <code>.queue</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.", parse_mode=enums.ParseMode.HTML)
@@ -340,7 +341,7 @@ async def _is_group_admin(client, message):
         return False
 
 
-@Client.on_message(filters.command("skip", [".", "/"]))
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command("skip", [".", "/"]))
 async def skip_command(client, message):
     if not await _owner_uid(client):
         return
@@ -377,7 +378,7 @@ async def skip_command(client, message):
     await message.reply("⏭️ ᴛʀᴀᴄᴋ sᴋɪᴘᴘᴇᴅ")
 
 
-@Client.on_message(filters.command("stop", [".", "/"]))
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command("stop", [".", "/"]))
 async def stop_command(client, message):
     if not await _owner_uid(client):
         return
