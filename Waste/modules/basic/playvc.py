@@ -37,13 +37,15 @@ def _safe_title(info, fallback):
 
 
 def _download_song(query: str):
-    """Resolve one audio result and return a local file + metadata."""
+    """Resolve audio with the connected account's normal yt-dlp flow plus
+    YouTube-client retries and SoundCloud fallback when YouTube blocks Render."""
     import yt_dlp
 
     job_id = uuid.uuid4().hex
     outtmpl = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
-    base_options = {
-        "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
+    cookie_file = os.getenv("COOKIES_FILE", "cookies.txt")
+    base = {
+        "format": "bestaudio/best",
         "outtmpl": outtmpl,
         "noplaylist": True,
         "quiet": True,
@@ -51,44 +53,88 @@ def _download_song(query: str):
         "default_search": "ytsearch1",
         "source_address": "0.0.0.0",
         "geo_bypass": True,
-        "retries": 5,
-        "fragment_retries": 5,
-        "file_access_retries": 3,
-        "socket_timeout": 30,
+        "retries": 3,
+        "fragment_retries": 3,
+        "file_access_retries": 2,
+        "socket_timeout": 20,
         "nocheckcertificate": True,
+        "concurrent_fragment_downloads": 3,
     }
-    cookie_file = os.getenv("COOKIES_FILE", "cookies.txt")
     if os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 0:
-        base_options["cookiefile"] = cookie_file
+        base["cookiefile"] = cookie_file
 
-    search_query = query if query.startswith(("http://", "https://", "ytsearch", "yt://")) else f"ytsearch1:{query}"
+    def _extract(q, opts):
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            return ydl.extract_info(q, download=True)
+
+    def _find_file(info, ydl=None):
+        requested = ydl.prepare_filename(info) if ydl else ""
+        if requested and os.path.exists(requested):
+            return requested
+        stem = os.path.splitext(requested)[0] if requested else ""
+        if stem:
+            matches = [
+                os.path.join(DOWNLOAD_DIR, name)
+                for name in os.listdir(DOWNLOAD_DIR)
+                if name.startswith(os.path.basename(stem) + ".")
+            ]
+            if matches:
+                return matches[0]
+        # Some postprocessors change the extension; locate the newest job file.
+        candidates = [os.path.join(DOWNLOAD_DIR, n) for n in os.listdir(DOWNLOAD_DIR) if n.startswith(job_id + ".")]
+        return max(candidates, key=os.path.getmtime) if candidates else None
+
+    search = query if query.startswith(("http://", "https://", "ytsearch", "yt://")) else f"ytsearch1:{query}"
     errors = []
-    for clients in (("android", "web"), ("android", "ios", "web"), ("web_safari", "android"), None):
-        options = dict(base_options)
+    youtube_clients = (
+        ("android", "web"),
+        ("android_vr", "ios", "web"),
+        ("tv", "ios", "android_vr"),
+        ("web_safari", "android"),
+        None,
+    )
+    for clients in youtube_clients:
+        opts = dict(base)
         if clients:
-            options["extractor_args"] = {"youtube": {"player_client": list(clients)}}
+            opts["extractor_args"] = {"youtube": {"player_client": list(clients)}}
         try:
-            with yt_dlp.YoutubeDL(options) as ydl:
-                info = ydl.extract_info(search_query, download=True)
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(search, download=True)
                 if info and info.get("entries"):
                     info = next((x for x in info["entries"] if x), None)
                 if not info:
                     raise RuntimeError("No audio result found")
-                requested = ydl.prepare_filename(info)
-                path = requested if os.path.exists(requested) else None
-                if path is None:
-                    stem = os.path.splitext(requested)[0]
-                    matches = [
-                        os.path.join(DOWNLOAD_DIR, name)
-                        for name in os.listdir(DOWNLOAD_DIR)
-                        if name.startswith(os.path.basename(stem) + ".")
-                    ]
-                    path = matches[0] if matches else None
+                path = _find_file(info, ydl)
                 if not path or not os.path.exists(path):
                     raise FileNotFoundError("Downloaded audio file not found")
                 return path, info
         except Exception as exc:
             errors.append(exc)
+            msg = str(exc).lower()
+            # If YouTube is clearly blocked, don't waste time on every possible client.
+            if any(x in msg for x in ("sign in to confirm", "not a bot", "http error 403")) and clients in (("tv", "ios", "android_vr"), None):
+                break
+
+    # Render/YouTube often blocks yt-dlp. SoundCloud is a practical audio fallback.
+    try:
+        sc_query = query
+        if query.startswith("http://") or query.startswith("https://"):
+            sc_query = query
+        else:
+            sc_query = f"scsearch1:{query}"
+        opts = dict(base)
+        opts.pop("extractor_args", None)
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(sc_query, download=True)
+            if info and info.get("entries"):
+                info = next((x for x in info["entries"] if x), None)
+            if info:
+                path = _find_file(info, ydl)
+                if path and os.path.exists(path):
+                    return path, info
+    except Exception as exc:
+        errors.append(exc)
+
     raise errors[-1] if errors else RuntimeError("Music download failed")
 
 
