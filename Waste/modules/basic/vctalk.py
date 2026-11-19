@@ -464,7 +464,7 @@ def _rms(pcm: bytes) -> float:
     return math.sqrt(sum(x * x for x in a) / len(a))
 
 
-async def _incoming_audio(client, update: StreamFrames):
+async def _incoming_audio(client, update):
     chat_id = int(getattr(update, "chat_id", 0) or 0)
     if not chat_id or not _enabled(client, chat_id):
         return

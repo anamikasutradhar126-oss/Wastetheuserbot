@@ -44,7 +44,7 @@ HELP_MENU = f"""<blockquote>{PE(PE_USER)} <b>| ❁ ＷＡＳＴＥ Ｘ ＵＢＯ
 {PE(PE_COMMAND)} <b>weather</b>  {PE(PE_COMMAND)} <b>VcFight</b>
 {PE(PE_COMMAND)} <b>promotion</b>  {PE(PE_COMMAND)} <b>aichat</b>
 {PE(PE_COMMAND)} <b>Music</b>  {PE(PE_COMMAND)} <b>VcTalk</b>
-{PE(PE_COMMAND)} <b>AutoTextPromo</b>
+{PE(PE_COMMAND)} <b>ReactionPlus</b>  {PE(PE_COMMAND)} <b>AutoTextPromo</b>
 
 {PE(PE_SUPPORT)} <b>@wasteBotz</b>  ×  <b>@wasteuserbotUpdates</b></blockquote>"""
 
@@ -62,7 +62,7 @@ FORCE_COMMANDS = [
     "memify", "mention", "metrics", "paste", "pats", "ping", "profile", "purge", "quotly", "raid", "replyraid", "restart",
     "sangmata", "screenshot", "spam", "start", "stats", "sticker", "stickers", "sudos", "tag", "tagalert", "tagall", "text",
     "tiny", "translate", "truth-dare", "update", "upload", "vctools", "vulgar", "waifu", "weather", "VcFight", "promotion", "aichat",
-    "Music", "VcTalk", "AutoTextPromo"
+    "Music", "VcTalk", "ReactionPlus", "AutoTextPromo"
 ]
 
 def _ser_name(name):
@@ -212,8 +212,9 @@ MODULE_FALLBACKS = {
         ("mmar on 😂😭😑🤣💔🖕🍌", "React to your own messages with the selected emoji pool."),
         ("mmar off", "Disable reactions on your own messages."),
         ("omar on @username", "Target a user and react to their messages."),
-        ("omar on 123456789", "Target a user by ID and react to their messages."),
-        ("omar off", "Disable target reactions."),
+        ("omar on", "Target a user by ID and react to their messages."),
+        ("omar on (reply)", "Reply to a user's message and enable reactions for that user."),
+        ("omar off", "Disable target-user reactions."),
     ],
 }
 
