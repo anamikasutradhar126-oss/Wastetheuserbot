@@ -259,8 +259,8 @@ async def play_handler(client, message):
             "<blockquote>❌ ᴜsᴇ <code>.play sᴏɴɢ ɴᴀᴍᴇ</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.</blockquote>",
             parse_mode=enums.ParseMode.HTML,
         )
-    if not await _require_group_admin(message, client):
-        return
+    # PLAY IS AVAILABLE TO EVERY GROUP MEMBER. Only skip/stop are admin-only.
+    # The connected ID is the account that performs the actual VC playback.
 
     parts = message.text.split(None, 1) if message.text else []
     query = parts[1].strip() if len(parts) > 1 else ""
@@ -394,9 +394,9 @@ async def stop_command(client, message):
 add_command_help(
     "Music",
     [
-        ["play", "Everyone in the group can use `.play song name` or `/play song name`. The connected ID joins this group's VC and plays the requested song; if another track is already playing, the requested track is queued."],
-        ["autoplay on|off", "Everyone in the group can use `.autoplay on` / `/autoplay on` or `.autoplay off` / `/autoplay off` to control related-song autoplay for the current VC."],
-        ["queue", "Everyone in the group can use `.queue` or `/queue` to view the current song and queued songs in this group."],
+        ["play", "All group members can use `.play song name` or `/play song name`. The connected ID joins this group's VC and plays exactly the requested result; if another track is already playing, the requested track is queued."],
+        ["autoplay on|off", "All group members can use `.autoplay on` / `/autoplay on` or `.autoplay off` / `/autoplay off` to control related-song autoplay for the current VC."],
+        ["queue", "All group members can use `.queue` or `/queue` to view the current song and queued songs in this group."],
         ["skip", "Group admins only: skip the current song and play the next queued/related song."],
         ["stop", "Group admins only: stop music and clear the queue."],
         ["vplay", "Connected ID only: alias for `.play`."],
