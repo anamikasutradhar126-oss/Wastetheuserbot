@@ -19,7 +19,8 @@ from pathlib import Path
 
 import aiohttp
 from pyrogram import Client, filters
-from pytgcalls.types import GroupCallConfig
+from pytgcalls import filters as tgcall_filters
+from pytgcalls.types import Device, Direction, GroupCallConfig
 
 from config import GROQ_API_KEY, GROQ_MODEL
 from Waste.modules.help import add_command_help
@@ -365,14 +366,30 @@ def _register_stream_callback(user_client, call):
     if not callable(on_update):
         return False
 
-    @on_update()
-    async def _bound_update(call_instance, update):
-        if type(update).__name__ != "StreamFrames":
-            return
-        direction = str(getattr(update, "direction", "")).upper()
-        if "OUTGOING" in direction:
-            return
-        await _incoming_audio(user_client, update)
+    # Only consume incoming microphone frames from the VC.  This is the
+    # supported PyTgCalls stream-frame path and avoids accidentally feeding
+    # the connected account's own outgoing audio back into VcTalk.
+    try:
+        stream_filter = tgcall_filters.stream_frame(
+            Direction.INCOMING,
+            Device.MICROPHONE,
+        )
+    except Exception:
+        stream_filter = None
+
+    if stream_filter is not None:
+        @on_update(stream_filter)
+        async def _bound_update(call_instance, update):
+            await _incoming_audio(user_client, update)
+    else:
+        @on_update()
+        async def _bound_update_fallback(call_instance, update):
+            if type(update).__name__ != "StreamFrames":
+                return
+            direction = str(getattr(update, "direction", "")).upper()
+            if "OUTGOING" in direction:
+                return
+            await _incoming_audio(user_client, update)
 
     setattr(call, "_waste_vctalk_registered", True)
     return True

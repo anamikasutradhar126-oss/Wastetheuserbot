@@ -221,10 +221,10 @@ async def play_song_in_chat(client, chat_id: int, query: str, enqueue=False):
     return path, info, False
 
 
-@Client.on_message(filters.command(["play", "song", "vplay"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["play", "song", "vplay"], [".", "/"]))
 async def play_handler(client, message):
-    # Music is a connected-ID feature only. Never let the bot client itself
-    # become a music player, even if it receives/sends a matching command.
+    # The connected /add account performs playback, but any member of the
+    # group can request it by sending .play /play.
     if not getattr(client, "_waste_owner_uid", None):
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
