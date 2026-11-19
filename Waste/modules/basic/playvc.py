@@ -32,6 +32,18 @@ def _state(client, chat_id):
     return _music[(id(client), int(chat_id))]
 
 
+async def _owner_uid(client):
+    """Return the connected account owner/user id for hosted or static sessions."""
+    uid = getattr(client, "_waste_owner_uid", None)
+    if uid:
+        return int(uid)
+    try:
+        me = getattr(client, "me", None) or await client.get_me()
+        return int(me.id) if me else None
+    except Exception:
+        return None
+
+
 def _safe_title(info, fallback):
     title = str(info.get("title") or fallback)
     return title.replace("<", "&lt;").replace(">", "&gt;")[:180]
@@ -85,6 +97,8 @@ def _download_song(query: str):
         candidates = [os.path.join(DOWNLOAD_DIR, n) for n in os.listdir(DOWNLOAD_DIR) if n.startswith(job_id + ".")]
         return max(candidates, key=os.path.getmtime) if candidates else None
 
+    # A plain song name is resolved to exactly one YouTube search result.
+    # Never use a related/random result for the user's explicit .play request.
     search = query if query.startswith(("http://", "https://", "ytsearch", "yt://")) else f"ytsearch1:{query}"
     errors = []
     youtube_clients = (
@@ -226,7 +240,7 @@ async def play_song_in_chat(client, chat_id: int, query: str, enqueue=False):
 async def play_handler(client, message):
     # The connected /add account performs playback, but any member of the
     # group can request it by sending .play /play.
-    if not getattr(client, "_waste_owner_uid", None):
+    if not await _owner_uid(client):
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply(
@@ -273,7 +287,7 @@ async def play_handler(client, message):
 
 @Client.on_message(filters.command("autoplay", [".", "/"]))
 async def autoplay_command(client, message):
-    if not getattr(client, "_waste_owner_uid", None):
+    if not await _owner_uid(client):
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply("❌ ᴜsᴇ <code>.autoplay on</code> / <code>.autoplay off</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.", parse_mode=enums.ParseMode.HTML)
@@ -296,7 +310,7 @@ async def autoplay_command(client, message):
 
 @Client.on_message(filters.command("queue", [".", "/"]))
 async def queue_command(client, message):
-    if not getattr(client, "_waste_owner_uid", None):
+    if not await _owner_uid(client):
         return
     if not message.chat or getattr(message.chat.type, "value", message.chat.type) not in {"group", "supergroup"}:
         return await message.reply("❌ ᴜsᴇ <code>.queue</code> ɪɴsɪᴅᴇ ᴀ ɢʀᴏᴜᴘ.", parse_mode=enums.ParseMode.HTML)
@@ -328,7 +342,7 @@ async def _is_group_admin(client, message):
 
 @Client.on_message(filters.command("skip", [".", "/"]))
 async def skip_command(client, message):
-    if not getattr(client, "_waste_owner_uid", None):
+    if not await _owner_uid(client):
         return
     if not await _is_group_admin(client, message):
         return await message.reply("❌ <b>ᴀᴅᴍɪɴ ᴏɴʟʏ</b>\n\nᴏɴʟʏ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ <code>.skip</code> / <code>/skip</code>.", parse_mode=enums.ParseMode.HTML)
@@ -365,7 +379,7 @@ async def skip_command(client, message):
 
 @Client.on_message(filters.command("stop", [".", "/"]))
 async def stop_command(client, message):
-    if not getattr(client, "_waste_owner_uid", None):
+    if not await _owner_uid(client):
         return
     if not await _is_group_admin(client, message):
         return await message.reply("❌ <b>ᴀᴅᴍɪɴ ᴏɴʟʏ</b>\n\nᴏɴʟʏ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ <code>.stop</code> / <code>/stop</code>.", parse_mode=enums.ParseMode.HTML)
