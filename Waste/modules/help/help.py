@@ -318,6 +318,9 @@ async def force_command(client, message):
 
 @Client.on_message(filters.command(["help", "helpme"], [".", "/"]) & filters.me)
 async def module_help(client: Client, message: Message):
+    # Help belongs to the connected userbot account, not the host bot token.
+    if not getattr(client, "_waste_owner_uid", None):
+        return
     help_arg = " ".join(message.command[1:]).strip() if len(message.command) > 1 else ""
     is_private = bool(message.chat and getattr(message.chat.type, "value", message.chat.type) == "private")
 

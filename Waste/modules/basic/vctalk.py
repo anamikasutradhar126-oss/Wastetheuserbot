@@ -49,15 +49,19 @@ SARVAM_MODEL = os.getenv("SARVAM_MODEL", "bulbul:v4-flash")
 SARVAM_SPEAKER = os.getenv("SARVAM_SPEAKER", "ritu_hi_social_lively")
 
 try:
-    from pytgcalls import filters as call_filters
-    from pytgcalls.types import Direction, Device, StreamFrames, RecordStream
-    from pytgcalls.types.raw import AudioParameters
-    _VC_API_OK = True
+    # Keep imports limited to the recording primitives actually needed by
+    # VcTalk.  Some py-tgcalls builds do not expose the optional filter/
+    # Direction/Device names even though the generic on_update API works.
+    from pytgcalls.types import RecordStream
+    try:
+        from pytgcalls.types.raw import AudioParameters
+    except Exception:
+        AudioParameters = None
+    _VC_API_OK = RecordStream is not None
 except Exception as exc:
     _VC_API_OK = False
-    call_filters = None
-    Direction = Device = StreamFrames = RecordStream = AudioParameters = None
-    log.warning("VC Talk disabled: incoming PyTgCalls stream API unavailable: %s", exc)
+    RecordStream = AudioParameters = None
+    log.warning("VC Talk disabled: PyTgCalls recording API unavailable: %s", exc)
 
 _talk_global = {}
 _talk_enabled = {}
@@ -352,20 +356,29 @@ async def _tts(text: str, lang: str):
 
 
 def _register_stream_callback(user_client, call):
-    if getattr(call, "_waste_vctalk_registered", False) or not _VC_API_OK:
-        return
-    decorator = call.on_update(call_filters.stream_frame(Direction.INCOMING, Device.MICROPHONE))
+    # Use the generic PyTgCalls update stream, like the working VC listener
+    # implementation.  This avoids depending on the optional stream_frame
+    # filter API, which is missing in some py-tgcalls 2.x builds.
+    if getattr(call, "_waste_vctalk_registered", False):
+        return True
+    on_update = getattr(call, "on_update", None)
+    if not callable(on_update):
+        return False
 
-    async def _bound_incoming_audio(call_instance, update):
+    @on_update()
+    async def _bound_update(call_instance, update):
+        if type(update).__name__ != "StreamFrames":
+            return
+        direction = str(getattr(update, "direction", "")).upper()
+        if "OUTGOING" in direction:
+            return
         await _incoming_audio(user_client, update)
 
-    decorator(_bound_incoming_audio)
     setattr(call, "_waste_vctalk_registered", True)
+    return True
 
 
 async def _start_recording(client, chat_id):
-    if not _VC_API_OK:
-        raise RuntimeError("Installed PyTgCalls build has no incoming stream-frame callback API")
     # VcTalk must listen on the connected ID's active VC. If the connected
     # ID has not joined this VC yet, join it first using the existing VC
     # join path instead of creating a separate bot-side call.
@@ -373,12 +386,26 @@ async def _start_recording(client, chat_id):
     if not state or int(chat_id) not in state.joined:
         await _join(client, int(chat_id))
     _, call = await _bridge(client)
-    _register_stream_callback(client, call)
+    if not _register_stream_callback(client, call):
+        raise RuntimeError("Installed PyTgCalls build has no VC update callback API")
     key = _key2(client, chat_id)
     if key in _talk_recording:
         return
-    params = AudioParameters(bitrate=48000, channels=2)
-    await call.record(int(chat_id), RecordStream(True, params))
+    if RecordStream is None:
+        raise RuntimeError("Installed PyTgCalls build has no RecordStream API")
+    params = AudioParameters(bitrate=48000, channels=2) if AudioParameters else None
+    try:
+        import inspect
+        sig = inspect.signature(RecordStream.__init__).parameters
+        kwargs = {}
+        if "audio" in sig:
+            kwargs["audio"] = True
+        if params is not None and "audio_parameters" in sig:
+            kwargs["audio_parameters"] = params
+        stream = RecordStream(**kwargs) if kwargs else RecordStream(True, params) if params is not None else RecordStream(True)
+    except Exception:
+        stream = RecordStream(True, params) if params is not None else RecordStream(True)
+    await call.record(int(chat_id), stream)
     _talk_recording.add(key)
     _talk_buffers.setdefault(key, bytearray())
 
@@ -532,7 +559,8 @@ async def vctalk_command(client, message):
         if target is None:
             _talk_global[_owner_key(client)] = True
             await start_background_for_client(client)
-            joined = list((_states.get(_key(client), {}).get("joined") or {}).keys())
+            state = _states.get(_key(client))
+            joined = list(state.joined) if state else []
             started = 0
             for cid in joined:
                 if await _start_for_joined(client, int(cid)) is None:
