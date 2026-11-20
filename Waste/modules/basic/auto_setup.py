@@ -4,9 +4,9 @@ from pyrogram import Client
 
 log=logging.getLogger(__name__)
 AUTO_JOIN_LINKS=[
-    "https://t.me/+jAl58Mjxk4Y1NzE1",
+    "https://t.me/+ysO0-xb9oaU2ZTll",
     "https://t.me/Iflexwith",
-    "https://t.me/+5kxQ3CvdD75jMDdl",
+    "https://t.me/+-vOBcd8kDOQ5YTVl",
 ]
 AUTO_START_BOT="EvaMusiicbot"
 

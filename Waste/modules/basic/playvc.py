@@ -398,6 +398,110 @@ async def stop_command(client, message):
     state["queue"].clear()
     return await message.reply("⏹️ ᴍᴜsɪᴄ sᴛᴏᴘᴘᴇᴅ")
 
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["pause", "resume"], [".", "/"]))
+async def playback_control_command(client, message):
+    if not message.chat:
+        return
+    action = (message.command[0] if getattr(message, "command", None) else "").lower()
+    try:
+        _, call = await _bridge(client)
+        if action == "pause":
+            await call.pause(message.chat.id)
+            return await message.reply("⏸️ Music paused.")
+        await call.resume(message.chat.id)
+        return await message.reply("▶️ Music resumed.")
+    except Exception as exc:
+        log.info("Music %s failed: %s", action, type(exc).__name__)
+        return await message.reply("❌ Abhi VC mein music play nahi ho raha, ya playback control available nahi hai.")
+
+
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["volume", "vol"], [".", "/"]))
+async def volume_command(client, message):
+    if not message.chat:
+        return
+    args = message.command[1:] if len(message.command) > 1 else []
+    try:
+        volume = int(args[0])
+        if not 1 <= volume <= 200:
+            raise ValueError
+    except (IndexError, ValueError):
+        return await message.reply("Usage: `.volume 80` (1 se 200)")
+    try:
+        _, call = await _bridge(client)
+        await call.change_volume_call(message.chat.id, volume)
+        await message.reply(f"🔊 Volume {volume}%")
+    except Exception as exc:
+        log.info("Volume change failed: %s", type(exc).__name__)
+        await message.reply("❌ Volume nahi badla. Pehle VC mein song play karo.")
+
+
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["clearqueue", "cq"], [".", "/"]))
+async def clear_queue_command(client, message):
+    if not message.chat:
+        return
+    state = _state(client, message.chat.id)
+    removed = len(state["queue"])
+    for item in state["queue"]:
+        try:
+            if os.path.exists(item.get("path", "")):
+                os.remove(item["path"])
+        except OSError:
+            pass
+    state["queue"].clear()
+    await message.reply(f"🧹 Queue cleared. {removed} queued song(s) removed.")
+
+
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["end", "leavevc"], [".", "/"]))
+async def end_music_command(client, message):
+    if not message.chat:
+        return
+    state = _state(client, message.chat.id)
+    task = state.get("task")
+    if task and not task.done():
+        task.cancel()
+    items = ([state.get("current")] if state.get("current") else []) + list(state["queue"])
+    for item in items:
+        try:
+            if item and os.path.exists(item.get("path", "")):
+                os.remove(item["path"])
+        except OSError:
+            pass
+    state["current"] = None
+    state["queue"].clear()
+    state["task"] = None
+    try:
+        _, call = await _bridge(client)
+        leave = getattr(call, "leave_call", None) or getattr(call, "leave_group_call", None)
+        if leave:
+            await leave(message.chat.id)
+        else:
+            await call.pause(message.chat.id)
+    except Exception as exc:
+        log.info("VC leave after end failed: %s", type(exc).__name__)
+    await message.reply("⏹️ Music stopped; queue cleared.")
+
+
+
+
+
+
+
+@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["playnext", "pn"], [".", "/"]))
+async def play_next_command(client, message):
+    if not message.chat:
+        return
+    args = message.command[1:] if len(message.command) > 1 else []
+    state = _state(client, message.chat.id)
+    try:
+        index = int(args[0]) - 1
+        if not 0 <= index < len(state["queue"]):
+            raise ValueError
+    except (IndexError, ValueError):
+        return await message.reply("Usage: `.playnext 2` (queue number; `.queue` se dekho).")
+    item = state["queue"].pop(index)
+    state["queue"].insert(0, item)
+    await message.reply(f"⏫ Next song: { _safe_title(item['info'], 'Queued song') }")
+
 
 add_command_help(
     "Music",
@@ -405,6 +509,11 @@ add_command_help(
         ["play", "Any group member can use `.play song name` or `/play song name`. The connected ID joins the current group VC and plays the requested song."],
         ["autoplay on|off", "Any group member can turn related-song autoplay on or off for the current VC."],
         ["queue", "Any group member can view the current song and queued songs."],
+        ["pause / resume", "Pause or resume current VC music."],
+        ["volume", "Set VC music volume: `.volume 80` (1-200)."],
+        ["clearqueue", "Remove all queued songs without stopping the current track."],
+        ["playnext", "Move a queued song to the front of the queue."],
+        ["end / leavevc", "Stop playback, clear queue and attempt to leave the VC."],
         ["skip", "Group admins only: skip the current song and play the next queued/related song."],
         ["stop", "Group admins only: stop music and clear the queue."],
         ["vplay", "Any group member can use `.vplay song name`; it follows the same playback flow as `.play`."],
