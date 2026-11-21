@@ -12,7 +12,7 @@ ok = []
 DEVS = int(6762113050)
 
 
-@Client.on_message(filters.command("sudolist", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("sudolist", [".", "/"]) & (filters.incoming | filters.me))
 async def gbanlist(client: Client, message: Message):
     users = (SUDO_USER)
     ex = await message.edit_text("`Processing...`")

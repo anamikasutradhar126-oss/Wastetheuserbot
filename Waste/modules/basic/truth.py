@@ -8,7 +8,7 @@ from Waste import SUDO_USER
 from cache.data2 import *
 
 @Client.on_message(
-    filters.command(["truth"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["truth"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def truth(x: Client, e: Message):
       shashank = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)

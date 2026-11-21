@@ -561,7 +561,7 @@ async def start_background_for_client(client):
         _talk_watchers[owner] = asyncio.create_task(_watch_global(client))
 
 
-@Client.on_message(filters.command("vctalk", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("vctalk", [".", "/"]) & (filters.incoming | filters.me))
 async def vctalk_command(client, message):
     args = message.command[1:] if len(message.command) > 1 else []
     action = args[0].lower() if args else "status"

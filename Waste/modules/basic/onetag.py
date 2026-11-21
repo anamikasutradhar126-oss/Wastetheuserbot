@@ -17,7 +17,7 @@ def get_arg(message: Message):
         return ""
     return " ".join(split[1:])
 
-@Client.on_message(filters.command("onetag", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("onetag", [".", "/"]) & (filters.incoming | filters.me))
 async def mentionall(client: Client, message: Message):
     chat_id = message.chat.id
     direp = message.reply_to_message
@@ -48,7 +48,7 @@ async def mentionall(client: Client, message: Message):
         pass
 
 
-@Client.on_message(filters.command("cancel", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("cancel", [".", "/"]) & (filters.incoming | filters.me))
 async def cancel_spam(client: Client, message: Message):
     if not message.chat.id in spam_chats:
         return await message.edit("**ɪᴛ sᴇᴇᴍs ᴛʜᴇʀᴇ ɪs ɴᴏ ᴛᴀɢᴀʟʟ ʜᴇʀᴇ.**")

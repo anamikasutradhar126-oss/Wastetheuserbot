@@ -10,7 +10,7 @@ def replace_text(text):
     return text.replace('"', "").replace("\\r", "").replace("\\n", "").replace("\\", "")
 
 
-@Client.on_message(filters.me & filters.command(["ud"], [".", "/"]))
+@Client.on_message((filters.incoming | filters.me) & filters.command(["ud"], [".", "/"]))
 async def urban_dictionary(bot, message):
     if len(message.text.split()) == 1:
         await message.edit("Usage: `ud example`")

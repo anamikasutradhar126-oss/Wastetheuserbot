@@ -4,7 +4,9 @@ The account that sends .play is the connected /add account.  No separate
 STRING_SESSION is needed for these commands.
 """
 import asyncio
+import html
 import logging
+import shutil
 import os
 import uuid
 from collections import defaultdict
@@ -13,12 +15,42 @@ from pyrogram import Client, filters, enums
 from pyrogram.enums import ChatMemberStatus
 from pytgcalls.types import GroupCallConfig
 
+try:
+    from pytgcalls.types import MediaStream
+except Exception:  # alag py-tgcalls version
+    MediaStream = None
+
 from Waste.modules.basic.vcfight import _bridge, _join
 from Waste.modules.help import add_command_help
 
 log = logging.getLogger(__name__)
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+
+def _ensure_ffmpeg():
+    """Render par ffmpeg install nahi hota. requirements.txt me `imageio-ffmpeg`
+    ho to uski binary ko PATH me `ffmpeg` naam se laga do."""
+    try:
+        if shutil.which("ffmpeg"):
+            return
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        bindir = os.path.join(os.getcwd(), ".ffbin")
+        os.makedirs(bindir, exist_ok=True)
+        link = os.path.join(bindir, "ffmpeg")
+        if not os.path.lexists(link):
+            try:
+                os.symlink(exe, link)
+            except OSError:
+                shutil.copy2(exe, link)
+        os.environ["PATH"] = bindir + os.pathsep + os.environ.get("PATH", "")
+    except Exception as exc:
+        print(f"[playvc] ffmpeg setup failed: {exc}")
+
+
+_ensure_ffmpeg()
+print("[playvc] module loaded | ffmpeg:", shutil.which("ffmpeg"))
 
 _music = defaultdict(lambda: {
     "queue": [],
@@ -170,15 +202,55 @@ async def _related_query(title: str):
         return None
 
 
+async def _start_stream(call, chat_id, path):
+    stream = path
+    if MediaStream is not None:
+        try:
+            stream = MediaStream(
+                path,
+                audio_flags=MediaStream.Flags.REQUIRED,
+                video_flags=MediaStream.Flags.IGNORE,
+            )
+        except Exception:
+            stream = path
+    try:
+        await call.play(chat_id, stream, config=GroupCallConfig(auto_start=False))
+    except Exception as exc:
+        if type(exc).__name__ != "NoActiveGroupCall":
+            raise
+        # Group me VC on nahi tha: ek baar khud start karke try karo
+        await call.play(chat_id, stream, config=GroupCallConfig(auto_start=True))
+
+
+async def _stop_stream(client, chat_id):
+    """VC se leave karo taaki audio sach me band ho."""
+    try:
+        _, call = await _bridge(client)
+        leave = getattr(call, "leave_call", None) or getattr(call, "leave_group_call", None)
+        if leave:
+            await leave(int(chat_id))
+    except Exception as exc:
+        log.warning("Leave VC failed: %s: %s", type(exc).__name__, exc)
+
+
 async def _play_track(client, chat_id, path, info):
-    await _join(client, int(chat_id))
-    _, call = await _bridge(client)
     state = _state(client, chat_id)
+    try:
+        await _join(client, int(chat_id))
+        _, call = await _bridge(client)
+        await _start_stream(call, int(chat_id), path)
+    except Exception:
+        # play fail hua: current set mat karo, warna agle .play hamesha "Queued" me jayenge
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            pass
+        raise
     state["current"] = {"path": path, "info": info}
-    await call.play(int(chat_id), path, config=GroupCallConfig(auto_start=False))
 
     old = state.get("task")
-    if old and not old.done():
+    if old and not old.done() and old is not asyncio.current_task():
         old.cancel()
 
     duration = float(info.get("duration") or 0)
@@ -218,7 +290,7 @@ async def _track_watcher(client, chat_id, path, info, duration):
     except asyncio.CancelledError:
         raise
     except Exception as exc:
-        log.debug("Track watcher failed: %s", type(exc).__name__)
+        log.warning("Track watcher failed: %s: %s", type(exc).__name__, exc)
     finally:
         state = _state(client, chat_id)
         if state.get("current") is None and state.get("task") is asyncio.current_task():
@@ -280,10 +352,16 @@ async def play_handler(client, message):
         )
     except Exception as exc:
         log.exception("Music play failed")
-        await status.edit(
-            f"<blockquote>❌ <b>ᴍᴜsɪᴄ ғᴀɪʟᴇᴅ</b>\n\n<code>{type(exc).__name__}: {str(exc)[:180]}</code></blockquote>",
-            parse_mode=enums.ParseMode.HTML,
-        )
+        reason = f"{type(exc).__name__}: {str(exc)[:180]}"
+        if type(exc).__name__ == "NoActiveGroupCall":
+            reason = "VC on nahi hai. Group me pehle voice chat start karo (ya assistant ko manage video chats admin right do)."
+        try:
+            await status.edit(
+                f"<blockquote>❌ <b>ᴍᴜsɪᴄ ғᴀɪʟᴇᴅ</b>\n\n<code>{html.escape(reason, quote=False)}</code></blockquote>",
+                parse_mode=enums.ParseMode.HTML,
+            )
+        except Exception:
+            pass
 
 
 @Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command("autoplay", [".", "/"]))
@@ -318,9 +396,9 @@ async def queue_command(client, message):
     state = _state(client, message.chat.id)
     lines = []
     if state.get("current"):
-        lines.append("▶️ " + str(state["current"]["info"].get("title") or "Current")[:80])
+        lines.append("▶️ " + html.escape(str(state["current"]["info"].get("title") or "Current")[:80], quote=False))
     for i, item in enumerate(state["queue"], 1):
-        lines.append(f"{i}. " + str(item["info"].get("title") or "Queued")[:80])
+        lines.append(f"{i}. " + html.escape(str(item["info"].get("title") or "Queued")[:80], quote=False))
     if not lines:
         return await message.reply("📭 ǫᴜᴇᴜᴇ ᴇᴍᴘᴛʏ")
     await message.reply("<blockquote>🎵 <b>ǫᴜᴇᴜᴇ</b>\n\n" + "\n".join(lines) + "</blockquote>", parse_mode=enums.ParseMode.HTML)
@@ -333,6 +411,8 @@ async def _is_group_admin(client, message):
     user = getattr(message, "from_user", None)
     if not user:
         return False
+    if getattr(message, "outgoing", False) or user.id == await _owner_uid(client):
+        return True
     try:
         member = await client.get_chat_member(message.chat.id, user.id)
         status = getattr(member.status, "value", member.status)
@@ -375,6 +455,7 @@ async def skip_command(client, message):
                 return await message.reply("⏭️ ᴀᴜᴛᴏᴘʟᴀʏ ɴᴇxᴛ sᴏɴɢ ᴘʟᴀʏɪɴɢ")
             except Exception:
                 pass
+    await _stop_stream(client, message.chat.id)
     await message.reply("⏭️ ᴛʀᴀᴄᴋ sᴋɪᴘᴘᴇᴅ")
 
 
@@ -396,111 +477,8 @@ async def stop_command(client, message):
                 pass
     state["current"] = None
     state["queue"].clear()
+    await _stop_stream(client, message.chat.id)
     return await message.reply("⏹️ ᴍᴜsɪᴄ sᴛᴏᴘᴘᴇᴅ")
-
-@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["pause", "resume"], [".", "/"]))
-async def playback_control_command(client, message):
-    if not message.chat:
-        return
-    action = (message.command[0] if getattr(message, "command", None) else "").lower()
-    try:
-        _, call = await _bridge(client)
-        if action == "pause":
-            await call.pause(message.chat.id)
-            return await message.reply("⏸️ Music paused.")
-        await call.resume(message.chat.id)
-        return await message.reply("▶️ Music resumed.")
-    except Exception as exc:
-        log.info("Music %s failed: %s", action, type(exc).__name__)
-        return await message.reply("❌ Abhi VC mein music play nahi ho raha, ya playback control available nahi hai.")
-
-
-@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["volume", "vol"], [".", "/"]))
-async def volume_command(client, message):
-    if not message.chat:
-        return
-    args = message.command[1:] if len(message.command) > 1 else []
-    try:
-        volume = int(args[0])
-        if not 1 <= volume <= 200:
-            raise ValueError
-    except (IndexError, ValueError):
-        return await message.reply("Usage: `.volume 80` (1 se 200)")
-    try:
-        _, call = await _bridge(client)
-        await call.change_volume_call(message.chat.id, volume)
-        await message.reply(f"🔊 Volume {volume}%")
-    except Exception as exc:
-        log.info("Volume change failed: %s", type(exc).__name__)
-        await message.reply("❌ Volume nahi badla. Pehle VC mein song play karo.")
-
-
-@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["clearqueue", "cq"], [".", "/"]))
-async def clear_queue_command(client, message):
-    if not message.chat:
-        return
-    state = _state(client, message.chat.id)
-    removed = len(state["queue"])
-    for item in state["queue"]:
-        try:
-            if os.path.exists(item.get("path", "")):
-                os.remove(item["path"])
-        except OSError:
-            pass
-    state["queue"].clear()
-    await message.reply(f"🧹 Queue cleared. {removed} queued song(s) removed.")
-
-
-@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["end", "leavevc"], [".", "/"]))
-async def end_music_command(client, message):
-    if not message.chat:
-        return
-    state = _state(client, message.chat.id)
-    task = state.get("task")
-    if task and not task.done():
-        task.cancel()
-    items = ([state.get("current")] if state.get("current") else []) + list(state["queue"])
-    for item in items:
-        try:
-            if item and os.path.exists(item.get("path", "")):
-                os.remove(item["path"])
-        except OSError:
-            pass
-    state["current"] = None
-    state["queue"].clear()
-    state["task"] = None
-    try:
-        _, call = await _bridge(client)
-        leave = getattr(call, "leave_call", None) or getattr(call, "leave_group_call", None)
-        if leave:
-            await leave(message.chat.id)
-        else:
-            await call.pause(message.chat.id)
-    except Exception as exc:
-        log.info("VC leave after end failed: %s", type(exc).__name__)
-    await message.reply("⏹️ Music stopped; queue cleared.")
-
-
-
-
-
-
-
-@Client.on_message(filters.group & (filters.incoming | filters.me) & filters.command(["playnext", "pn"], [".", "/"]))
-async def play_next_command(client, message):
-    if not message.chat:
-        return
-    args = message.command[1:] if len(message.command) > 1 else []
-    state = _state(client, message.chat.id)
-    try:
-        index = int(args[0]) - 1
-        if not 0 <= index < len(state["queue"]):
-            raise ValueError
-    except (IndexError, ValueError):
-        return await message.reply("Usage: `.playnext 2` (queue number; `.queue` se dekho).")
-    item = state["queue"].pop(index)
-    state["queue"].insert(0, item)
-    await message.reply(f"⏫ Next song: { _safe_title(item['info'], 'Queued song') }")
 
 
 add_command_help(
@@ -509,11 +487,6 @@ add_command_help(
         ["play", "Any group member can use `.play song name` or `/play song name`. The connected ID joins the current group VC and plays the requested song."],
         ["autoplay on|off", "Any group member can turn related-song autoplay on or off for the current VC."],
         ["queue", "Any group member can view the current song and queued songs."],
-        ["pause / resume", "Pause or resume current VC music."],
-        ["volume", "Set VC music volume: `.volume 80` (1-200)."],
-        ["clearqueue", "Remove all queued songs without stopping the current track."],
-        ["playnext", "Move a queued song to the front of the queue."],
-        ["end / leavevc", "Stop playback, clear queue and attempt to leave the VC."],
         ["skip", "Group admins only: skip the current song and play the next queued/related song."],
         ["stop", "Group admins only: stop music and clear the queue."],
         ["vplay", "Any group member can use `.vplay song name`; it follows the same playback flow as `.play`."],

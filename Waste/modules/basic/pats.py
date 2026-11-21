@@ -8,7 +8,7 @@ from Waste.helper.PyroHelpers import GetChatID, ReplyCheck
 from Waste.modules.help import add_command_help
 
 
-@Client.on_message(filters.command(["pat", "pats"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["pat", "pats"], [".", "/"]) & (filters.incoming | filters.me))
 async def give_pats(bot: Client, message: Message):
     URL = "https://some-random-api.ml/animu/pat"
     async with aiohttp.ClientSession() as session:

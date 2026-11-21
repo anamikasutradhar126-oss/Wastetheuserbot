@@ -9,7 +9,7 @@ from cache.data2 import *
 import asyncio
 
 @Client.on_message(
-    filters.command(["flirt"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["flirt"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def flirt(x: Client, e: Message):
     shashank = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)

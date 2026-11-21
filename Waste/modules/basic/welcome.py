@@ -13,7 +13,7 @@ def _enabled(client):
     doc=settings_col.find_one({"_id": uid}) or {}
     return bool(doc.get("welcome_enabled", True))
 
-@Client.on_message(filters.command("welcome", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("welcome", [".", "/"]) & (filters.incoming | filters.me))
 async def welcome_toggle(client: Client, message: Message):
     uid=_uid(client)
     arg=(message.command[1].lower() if len(message.command)>1 else "status")

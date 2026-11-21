@@ -10,7 +10,7 @@ from gpytranslate import Translator
 
 trans = Translator()
 
-@Client.on_message(filters.command(["tr", "translate"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["tr", "translate"], [".", "/"]) & (filters.incoming | filters.me))
 async def translate(_, message) -> None:
     reply_msg = message.reply_to_message
     if not reply_msg:

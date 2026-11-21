@@ -9,7 +9,7 @@ from Waste.modules.help import add_command_help
 from pyrogram import enums
 
 
-@Client.on_message(filters.command(["weather", "w"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["weather", "w"], [".", "/"]) & (filters.incoming | filters.me))
 async def get_weather(bot: Client, message: Message):
     if len(message.command) == 1:
         await message.edit("Usage: `.weather Maldives`")

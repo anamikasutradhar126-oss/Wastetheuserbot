@@ -159,7 +159,7 @@ async def _ask_groq(text):
     return "⚠️ AI service is temporarily unavailable."
 
 
-@Client.on_message(filters.command("aichat", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("aichat", [".", "/"]) & (filters.incoming | filters.me))
 async def aichat_command(client: Client, message: Message):
     uid = await _uid(client)
     args = [x.lower() for x in (message.command[1:] if message.command else [])]
@@ -184,7 +184,7 @@ async def aichat_command(client: Client, message: Message):
     filters.incoming
     & (filters.group | filters.private)
     & (filters.text | filters.caption)
-    & ~filters.me
+    & ~(filters.incoming | filters.me)
     & ~filters.bot
     & ~filters.service
 )

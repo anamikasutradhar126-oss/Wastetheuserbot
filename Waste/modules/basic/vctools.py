@@ -39,7 +39,7 @@ async def get_group_call(
     return False
 
 
-@Client.on_message(filters.command(["startvc"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["startvc"], [".", "/"]) & (filters.incoming | filters.me))
 async def opengc(client: Client, message: Message):
     flags = " ".join(message.command[1:])
     tex = await message.reply_text(message, "`Processing . . .`")
@@ -71,7 +71,7 @@ async def opengc(client: Client, message: Message):
         await tex.edit(f"**INFO:** `{e}`")
 
 
-@Client.on_message(filters.command(["stopvc"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["stopvc"], [".", "/"]) & (filters.incoming | filters.me))
 async def end_vc_(client: Client, message: Message):
     chat_id = message.chat.id
     if not (

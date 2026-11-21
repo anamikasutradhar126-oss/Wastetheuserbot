@@ -79,7 +79,7 @@ async def extract_user_and_reason(message, sender_chat=False):
 async def extract_user(message):
     return (await extract_user_and_reason(message))[0]
 
-@Client.on_message(filters.command(["unblock"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["unblock"], [".", "/"]) & (filters.incoming | filters.me))
 async def unblock_user_func(client: Client, message: Message):
     user_id = await extract_user(message)
     tex = await message.reply_text("`Processing . . .`")
@@ -93,7 +93,7 @@ async def unblock_user_func(client: Client, message: Message):
     umention = (await client.get_users(user_id)).mention
     await message.edit(f"**sᴜᴄᴄᴇssғᴜʟʟʏ ᴜɴʙʟᴏᴄᴋᴇᴅ** {umention}")
 
-@Client.on_message(filters.command(["block"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["block"], [".", "/"]) & (filters.incoming | filters.me))
 async def block_user_func(client: Client, message: Message):
     user_id = await extract_user(message)
     tex = await message.reply_text("`ᴘʀᴏᴄᴇssɪɴɢ . . .`")
@@ -108,7 +108,7 @@ async def block_user_func(client: Client, message: Message):
     await tex.edit_text(f"**sᴜᴄᴄᴇssғᴜʟʟʏ ʙʟᴏᴄᴋᴇᴅ** {umention}")
 
 
-@Client.on_message(filters.command(["setname"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["setname"], [".", "/"]) & (filters.incoming | filters.me))
 async def setname(client: Client, message: Message):
     tex = await message.reply_text("`ᴘʀᴏᴄᴇssɪɴɢ . . .`")
     if len(message.command) == 1:
@@ -127,7 +127,7 @@ async def setname(client: Client, message: Message):
             "ᴘʀᴏᴠɪᴅᴇ ᴀ ᴛᴇxᴛ ᴛᴏ sᴇᴛ ᴀs ʏᴏᴜʀ ɴᴀᴍᴇ."
         )
 
-@Client.on_message(filters.command(["setbio"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["setbio"], [".", "/"]) & (filters.incoming | filters.me))
 async def set_bio(client: Client, message: Message):
     tex = await message.edit_text("`ᴘʀᴏᴄᴇssɪɴɢ . . .`")
     if len(message.command) == 1:
@@ -143,7 +143,7 @@ async def set_bio(client: Client, message: Message):
         return await tex.edit("ᴘʀᴏᴠɪᴅᴇ ᴛᴇxᴛ ᴛᴏ sᴇᴛ ᴀs ʙɪᴏ.")
 
 
-@Client.on_message(filters.command(["setpfp"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["setpfp"], [".", "/"]) & (filters.incoming | filters.me))
 async def set_pfp(client: Client, message: Message):
     replied = message.reply_to_message
     if (
@@ -167,7 +167,7 @@ async def set_pfp(client: Client, message: Message):
         await message.delete()
 
 
-@Client.on_message(filters.command(["vpfp"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["vpfp"], [".", "/"]) & (filters.incoming | filters.me))
 async def view_pfp(client: Client, message: Message):
     user_id = await extract_user(message)
     if user_id:

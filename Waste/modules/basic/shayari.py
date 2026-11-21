@@ -8,7 +8,7 @@ from cache.data2 import *
 import asyncio
 
 @Client.on_message(
-    filters.command(["sraid"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["sraid"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def sraid(x: Client, e: Message):
     shashank = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)

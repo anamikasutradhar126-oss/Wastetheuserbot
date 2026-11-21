@@ -29,7 +29,7 @@ def googlesearch(query):
     return returnquery
 
 @Client.on_message(
-    filters.command(["gs", "google"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["gs", "google"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def gs(client: Client, message: Message):
     Man = await message.edit("ᴘʀᴏᴄᴇꜱꜱɪɴɢ...")

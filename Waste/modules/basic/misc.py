@@ -29,7 +29,7 @@ else:
     )
 
 @Client.on_message(
-    filters.command(["alive", "shivop"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["alive", "shivop"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def alive(client: Client, message: Message):
     xx = await message.reply_text("⚡️")
@@ -52,7 +52,7 @@ async def alive(client: Client, message: Message):
     except BaseException:
         await xx.edit(xd, disable_web_page_preview=True)
 
-@Client.on_message(filters.command("repo", [".", "/"]) & filters.me | filters.user(SUDO_USER))
+@Client.on_message(filters.command("repo", [".", "/"]) & (filters.incoming | filters.me) | filters.user(SUDO_USER))
 async def repo(bot: Client, message: Message):
     await message.edit("⚡")
     await asyncio.sleep(1)
@@ -61,19 +61,19 @@ async def repo(bot: Client, message: Message):
     await message.edit("Ⰶ ʜᴇʀᴇ ɪs ғʀᴇᴇ ᴛᴏxɪᴄ ᴜsᴇʀʙᴏᴛ ʜᴏsᴛᴇʀ: \n\n[𝐖𝐀𝐒𝐓𝐄 ✘ 𝐔𝐒𝐄𝐑𝐁𝐎𝐓](https://t.me/wasteuserbot)\n\nⰆ ᴄʟᴏɴᴇ ʏᴏᴜʀ ᴘʏʀᴏɢʀᴀᴍ sᴇssɪᴏɴ & ᴇɴᴊᴏʏ")
 
 
-@Client.on_message(filters.command("creator", [".", "/"]) & filters.me | filters.user(SUDO_USER))
+@Client.on_message(filters.command("creator", [".", "/"]) & (filters.incoming | filters.me) | filters.user(SUDO_USER))
 async def creator(bot: Client, message: Message):
     await message.edit("@day1Nomore")
 
 
-@Client.on_message(filters.command(["uptime", "up"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["uptime", "up"], [".", "/"]) & (filters.incoming | filters.me))
 async def uptime(bot: Client, message: Message):
     now = datetime.now()
     current_uptime = now - START_TIME
     await message.edit(f"ᴜᴘᴛɪᴍᴇ ⚡\n" f"```{str(current_uptime).split('.')[0]}```")
 
 
-@Client.on_message(filters.command("id", [".", "/"]) & filters.me | filters.user(SUDO_USER))
+@Client.on_message(filters.command("id", [".", "/"]) & (filters.incoming | filters.me) | filters.user(SUDO_USER))
 async def get_id(bot: Client, message: Message):
     file_id = None
     user_id = None

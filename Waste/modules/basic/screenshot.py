@@ -8,7 +8,7 @@ from Waste.modules.help import add_command_help
 
 
 @Client.on_message(
-    filters.command(["screenshot", "ss"], [".", "/"]) & filters.private & filters.me)
+    filters.command(["screenshot", "ss"], [".", "/"]) & filters.private & (filters.incoming | filters.me))
 async def screenshot(bot: Client, message: Message):
     await asyncio.gather(
         message.delete(),

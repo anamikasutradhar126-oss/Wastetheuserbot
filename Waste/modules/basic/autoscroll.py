@@ -15,7 +15,7 @@ if f:
        message.continue_propagation()
 
 
-@Client.on_message(filters.command("autoscroll", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("autoscroll", [".", "/"]) & (filters.incoming | filters.me))
 async def add_to_auto_read(bot: Client, message: Message):
     if message.chat.id in f:
         f.remove(message.chat.id)

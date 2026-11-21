@@ -58,7 +58,7 @@ async def _react(message, emoji):
 
 
 # ------------------------- PREMIUM AUTOREACT -------------------------
-@Client.on_message(filters.command("autoreact", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("autoreact", [".", "/"]) & (filters.incoming | filters.me))
 async def autoreact_command(client, message):
     uid = _uid(client)
     if not uid or not _active(uid):
@@ -115,7 +115,7 @@ async def auto_react_watcher(client, message):
 
 
 # ------------------------- MMAR: MY MESSAGE AUTO REACT -------------------------
-@Client.on_message(filters.command("mmar", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("mmar", [".", "/"]) & (filters.incoming | filters.me))
 async def mmar_command(client, message):
     args = message.command[1:] if len(message.command) > 1 else []
     action = args[0].lower() if args else "status"
@@ -139,7 +139,7 @@ async def mmar_command(client, message):
     )
 
 
-@Client.on_message((filters.group | filters.channel) & filters.me & ~filters.service)
+@Client.on_message((filters.group | filters.channel) & (filters.incoming | filters.me) & ~filters.service)
 async def mmar_watcher(client, message):
     """
     React only to the owner's own outgoing messages.
@@ -176,7 +176,7 @@ def _target_id_from_command(client, message, args):
     return raw
 
 
-@Client.on_message(filters.command("omar", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("omar", [".", "/"]) & (filters.incoming | filters.me))
 async def omar_command(client, message):
     args = message.command[1:] if len(message.command) > 1 else []
     action = args[0].lower() if args else "status"

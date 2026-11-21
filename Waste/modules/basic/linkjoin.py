@@ -118,14 +118,14 @@ async def _run_join(client, message, kind):
         await status.edit(f"❌ {type(exc).__name__}: {str(exc)[:250]}\nUsage: `.all{kind} join <source_channel_link>`")
 
 
-@Client.on_message(filters.command(["allgroup"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["allgroup"], [".", "/"]) & (filters.incoming | filters.me))
 async def allgroup_join(client, message):
     if len(message.command) < 2 or message.command[1].lower() != "join":
         return await message.reply_text("Usage: `.allgroup join <source_channel_link>` (or run inside the source chat)")
     await _run_join(client, message, "group")
 
 
-@Client.on_message(filters.command(["allchannel"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["allchannel"], [".", "/"]) & (filters.incoming | filters.me))
 async def allchannel_join(client, message):
     if len(message.command) < 2 or message.command[1].lower() != "join":
         return await message.reply_text("Usage: `.allchannel join <source_channel_link>` (or run inside the source chat)")

@@ -6,7 +6,7 @@ from Waste.modules.help import add_command_help
 from Waste import SUDO_USER
 
 
-@Client.on_message(filters.command("create", [".", "/"]) & filters.me | filters.user(SUDO_USER))
+@Client.on_message(filters.command("create", [".", "/"]) & (filters.incoming | filters.me) | filters.user(SUDO_USER))
 async def create(client: Client, message: Message):
     if len(message.command) < 3:
         return await message.edit_text("**ᴜsᴀɢᴇ:** `.create [gc/ch] [name]`\nᴇxᴀᴍᴘʟᴇ: `.create gc My Group`")

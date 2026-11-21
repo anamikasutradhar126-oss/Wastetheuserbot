@@ -10,7 +10,7 @@ from cache.data2 import *
 
 
 @Client.on_message(
-    filters.command(["dare"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["dare"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def dare(x: Client, e: Message):
       shashank = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)

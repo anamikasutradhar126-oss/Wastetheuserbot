@@ -4,7 +4,7 @@ from pyrogram import Client, enums, filters
 from pyrogram.types import Message
 from Waste.modules.help import add_command_help
 
-@Client.on_message(filters.command(["join"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["join"], [".", "/"]) & (filters.incoming | filters.me))
 async def join(client: Client, message: Message):
     tex = message.command[1] if len(message.command) > 1 else message.chat.id
 
@@ -36,7 +36,7 @@ async def join(client: Client, message: Message):
         await g.edit(f"**ERROR:** \n\n{str(ex)}")
 
 
-@Client.on_message(filters.command(["leave"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["leave"], [".", "/"]) & (filters.incoming | filters.me))
 async def leave(client: Client, message: Message):
     xd = message.command[1] if len(message.command) > 1 else message.chat.id
 
@@ -67,7 +67,7 @@ async def leave(client: Client, message: Message):
         await xv.edit_text(f"**ᴇʀʀᴏʀ:** \n\n{str(ex)}")
 
 
-@Client.on_message(filters.command(["leaveallgc"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["leaveallgc"], [".", "/"]) & (filters.incoming | filters.me))
 async def kickmeall(client: Client, message: Message):
     tex = await message.reply_text("`ɢʟᴏʙᴀʟ ʟᴇᴀᴠᴇ ғʀᴏᴍ ɢʀᴏᴜᴘ ᴄʜᴀᴛs...`")
     er = 0
@@ -85,7 +85,7 @@ async def kickmeall(client: Client, message: Message):
     )
 
 
-@Client.on_message(filters.command(["leaveallch"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["leaveallch"], [".", "/"]) & (filters.incoming | filters.me))
 async def kickmeallch(client: Client, message: Message):
     ok = await message.reply_text("`ɢʟᴏʙᴀʟ ʟᴇᴀᴠᴇ ғʀᴏᴍ ɢʀᴏᴜᴘ ᴄʜᴀᴛs...`")
     er = 0

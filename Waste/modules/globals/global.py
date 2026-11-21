@@ -12,7 +12,7 @@ from Waste.modules.help import add_command_help
 
 ok = []
 
-@Client.on_message(filters.command("gban", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("gban", [".", "/"]) & (filters.incoming | filters.me))
 async def gban_user(client: Client, message: Message):
     user_id, reason = await extract_user_and_reason(message, sender_chat=True)
     if message.from_user.id != client.me.id:
@@ -59,7 +59,7 @@ async def gban_user(client: Client, message: Message):
     await ex.edit(msg)
 
 
-@Client.on_message(filters.command("ungban", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("ungban", [".", "/"]) & (filters.incoming | filters.me))
 async def ungban_user(client: Client, message: Message):
     user_id, reason = await extract_user_and_reason(message, sender_chat=True)
     if message.from_user.id != client.me.id:
@@ -104,7 +104,7 @@ async def ungban_user(client: Client, message: Message):
         return
 
 
-@Client.on_message(filters.command("listgban", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("listgban", [".", "/"]) & (filters.incoming | filters.me))
 async def gbanlist(client: Client, message: Message):
     users = (await Waste.gban_list())
     ex = await message.edit_text("`Processing...`")
@@ -118,7 +118,7 @@ async def gbanlist(client: Client, message: Message):
     return await ex.edit(gban_list)
 
 
-@Client.on_message(filters.command("gmute", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("gmute", [".", "/"]) & (filters.incoming | filters.me))
 async def gmute_user(client: Client, message: Message):
     args = await extract_user(message)
     reply = message.reply_to_message
@@ -164,7 +164,7 @@ async def gmute_user(client: Client, message: Message):
         return
 
 
-@Client.on_message(filters.command("ungmute", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("ungmute", [".", "/"]) & (filters.incoming | filters.me))
 async def ungmute_user(client: Client, message: Message):
     args = await extract_user(message)
     reply = message.reply_to_message
@@ -208,7 +208,7 @@ async def ungmute_user(client: Client, message: Message):
         return
 
 
-@Client.on_message(filters.command("listgmute", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("listgmute", [".", "/"]) & (filters.incoming | filters.me))
 async def gmutelist(client: Client, message: Message):
     users = (await Gmute.gmute_list())
     ex = await message.edit_text("`Processing...`")

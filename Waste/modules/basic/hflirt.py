@@ -8,7 +8,7 @@ from cache.data2 import *
 from Waste import SUDO_USER
 
 @Client.on_message(
-    filters.command(["hiflirt"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["hiflirt"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def hflirt(x: Client, e: Message):
       shashank = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)

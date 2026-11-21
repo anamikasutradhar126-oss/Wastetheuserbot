@@ -21,7 +21,7 @@ def subtract_time(start, end):
 
 
 @Client.on_message(
-    ((filters.group & filters.mentioned) | filters.private) & ~filters.me & ~filters.service, group=3
+    ((filters.group & filters.mentioned) | filters.private) & ~(filters.incoming | filters.me) & ~filters.service, group=3
 )
 async def collect_afk_messages(bot: Client, message: Message):
     if AFK:
@@ -76,7 +76,7 @@ async def collect_afk_messages(bot: Client, message: Message):
         CHAT_TYPE[GetChatID(message)] += 1
 
 
-@Client.on_message(filters.command("afk", [".", "/"]) & filters.me, group=3)
+@Client.on_message(filters.command("afk", [".", "/"]) & (filters.incoming | filters.me), group=3)
 async def afk_set(bot: Client, message: Message):
     global AFK_REASON, AFK, AFK_TIME
 
@@ -95,7 +95,7 @@ async def afk_set(bot: Client, message: Message):
     await message.delete()
 
 
-@Client.on_message(filters.command("afk", [".", "/"]) & filters.me, group=3)
+@Client.on_message(filters.command("afk", [".", "/"]) & (filters.incoming | filters.me), group=3)
 async def afk_unset(bot: Client, message: Message):
     global AFK, AFK_TIME, AFK_REASON, USERS, GROUPS
 
@@ -115,7 +115,7 @@ async def afk_unset(bot: Client, message: Message):
     await message.delete()
 
 if AFK:
-   @Client.on_message(filters.me, group=3)
+   @Client.on_message((filters.incoming | filters.me), group=3)
    async def auto_afk_unset(bot: Client, message: Message):
        global AFK, AFK_TIME, AFK_REASON, USERS, GROUPS
 

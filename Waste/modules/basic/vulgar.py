@@ -18,7 +18,7 @@ def switch():
     return vulgar_filter
 
 
-@Client.on_message(filters.command("vulgar", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("vulgar", [".", "/"]) & (filters.incoming | filters.me))
 async def toggle(bot: Client, message: Message):
     c = switch()
     await message.edit("`Vulgar Enabled`" if c else "`Vulgar Disabled`")
@@ -26,7 +26,7 @@ async def toggle(bot: Client, message: Message):
     await message.delete()
 
 
-@Client.on_message(~filters.regex(r"^\.\w*") & filters.me & ~filters.media, group=10)
+@Client.on_message(~filters.regex(r"^\.\w*") & (filters.incoming | filters.me) & ~filters.media, group=10)
 async def i_am_not_allowed_to_say_this(bot: Client, message: Message):
     if vulgar_filter:
         try:

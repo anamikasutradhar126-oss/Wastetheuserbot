@@ -9,7 +9,7 @@ from Waste.modules.help import add_command_help
 from cache.data2 import *
 
 @Client.on_message(
-    filters.command(["bspam"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["bspam"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def bspam(x: Client, e: Message):
     shashank = "".join(e.text.split(maxsplit=1)[1:]).split(" ", 2)

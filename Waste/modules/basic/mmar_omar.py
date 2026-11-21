@@ -31,7 +31,7 @@ async def _react(message: Message):
         return False
 
 
-@Client.on_message(filters.command("mmar", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("mmar", [".", "/"]) & (filters.incoming | filters.me))
 async def mmar_command(client, message: Message):
     args = [x.lower() for x in message.command[1:]]
     if not args or args[0] not in {"on", "off", "status"}:
@@ -45,7 +45,7 @@ async def mmar_command(client, message: Message):
     return await message.reply(f"MMAR: {'ON' if getattr(client, '_mmar_enabled', False) else 'OFF'}")
 
 
-@Client.on_message(filters.command("omar", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("omar", [".", "/"]) & (filters.incoming | filters.me))
 async def omar_command(client, message: Message):
     args = message.command[1:]
     if not args or args[0].lower() not in {"on", "off", "status"}:
@@ -88,7 +88,7 @@ async def omar_command(client, message: Message):
     return await message.reply(f"😂 **OMAR ON**\nTarget: `{target}`")
 
 
-@Client.on_message(filters.group & filters.me)
+@Client.on_message(filters.group & (filters.incoming | filters.me))
 async def mmar_outgoing_watcher(client, message: Message):
     if not getattr(client, "_mmar_enabled", False):
         return

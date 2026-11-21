@@ -12,7 +12,7 @@ FName = ""
 LName = ""
 Bio = ""
 
-@Client.on_message(filters.command("clone", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("clone", [".", "/"]) & (filters.incoming | filters.me))
 async def clone_user(client: Client, message: Message):
     global FName, LName, Bio
 
@@ -54,7 +54,7 @@ async def clone_user(client: Client, message: Message):
     except Exception as error:
         await delete_reply(message, reply_msg, str(error))
 
-@Client.on_message(filters.command("revert", [".", "/"]) & filters.me)
+@Client.on_message(filters.command("revert", [".", "/"]) & (filters.incoming | filters.me))
 async def _revert(client: Client, message: Message):
     global FName, LName, Bio
 

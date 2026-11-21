@@ -8,7 +8,7 @@ from Waste.modules.help import add_command_help
 from Waste import SUDO_USER
 
 
-@Client.on_message(filters.me & filters.command(["q", "quotly"], [".", "/"]))
+@Client.on_message((filters.incoming | filters.me) & filters.command(["q", "quotly"], [".", "/"]))
 async def quotly(client: Client, message: Message):
     args = get_arg(message)
     if not message.reply_to_message and not args:

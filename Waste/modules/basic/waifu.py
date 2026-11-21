@@ -8,7 +8,7 @@ from Waste.modules.help import add_command_help
 hl = "."
 
 @Client.on_message(
-    filters.command(["waifu"], [".", "/"]) & (filters.me | filters.user(SUDO_USER))
+    filters.command(["waifu"], [".", "/"]) & ((filters.incoming | filters.me) | filters.user(SUDO_USER))
 )
 async def waifu(client, message):
     args = message.text.split(" ")[1:]

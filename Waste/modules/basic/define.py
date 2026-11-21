@@ -7,7 +7,7 @@ from Waste.helper.aiohttp_helper import AioHttp
 from Waste.modules.help import add_command_help
 
 
-@Client.on_message(filters.command(["define", "dict"], [".", "/"]) & filters.me)
+@Client.on_message(filters.command(["define", "dict"], [".", "/"]) & (filters.incoming | filters.me))
 async def define(bot: Client, message: Message):
     cmd = message.command
 
